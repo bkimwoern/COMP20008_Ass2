@@ -55,17 +55,37 @@ def verify_task1_2():
     print("Finished Task 1.2")
     print("=" * 80)
 
+def verify_preprocessing():
+    try:
+        from preprocessing import preprocessing
+    except ImportError:
+        print("Preprocessing's function not found.")
+        return
+
+    print("=" * 80)
+    print("Executing preprocessing...\n")
+    preprocessing()
+
+    # print("Checking Task 1.1's output...\n")
+    #print("Preprocessing has no expected output but executed without exceptions\n")
+
+    print("Finished Preprocessing")
+    print("=" * 80)
+
+
 def main():
     args = sys.argv
     assert len(args) >= 2, "Please provide a task."
     task = args[1]
-    valid_tasks = ["all"] + ["task1_" + str(i) for i in range(1, 3)]
+    valid_tasks = ["all"] + ["task1_" + str(i) for i in range(1, 3)] + ["preprocessing"]
     assert task in valid_tasks, \
         f"Invalid task \"{task}\", options are: {valid_tasks}."
     if task == "task1_1":
         verify_task1_1()
     elif task == "task1_2":
         verify_task1_2()
+    elif task == "preprocessing":
+        verify_preprocessing()
     elif task == "all":
         verify_task1_1()
         verify_task1_2()
