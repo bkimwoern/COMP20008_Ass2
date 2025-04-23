@@ -1,7 +1,7 @@
 """
 COMP20008 Elements of Data Processing
 2025 Semester 1
-Assignment 1
+Assignment 2
 
 Solution: main file
 
