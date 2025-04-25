@@ -36,11 +36,11 @@ def process_person_csv(person_csv):
 
 def process_accident_csv(accident_csv):
     filtered_accident = accident_csv
-    public_holiday_csv = pd.read_csv()
+    public_holiday_csv = pd.read_csv('datasets/public_holiday_2012-2024.csv')
+
     filtered_accident['PUBLIC_HOLIDAY'] = 0
 
-def public_holiday_2024(date):
-    if date in ['2024-01-01', '2024-01-26', ]:
-        return 1
+
+
 
 
