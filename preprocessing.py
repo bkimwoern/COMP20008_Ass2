@@ -29,5 +29,18 @@ def process_person_csv(person_csv):
     filtered_person['IN_METAL_BOX'] = 0
     filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isin(['Drivers', 'Passengers']), 'IN_METAL_BOX'] = 1
 
+    # --- May have to impute EJECTED_CODE values = 9 to 0.
+
 
     filtered_person.to_csv('datasets/filtered_person.csv', index=False)
+
+def process_accident_csv(accident_csv):
+    filtered_accident = accident_csv
+    public_holiday_csv = pd.read_csv()
+    filtered_accident['PUBLIC_HOLIDAY'] = 0
+
+def public_holiday_2024(date):
+    if date in ['2024-01-01', '2024-01-26', ]:
+        return 1
+
+
