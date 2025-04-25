@@ -6,7 +6,9 @@ def preprocessing():
     person_csv = pd.read_csv('datasets/datasets-100/person-100.csv')
     process_person_csv(person_csv)
 
-    accident_csv = pd.read_csv('datasets/datasets-100/accident-100.csv')
+    #accident_csv = pd.read_csv('datasets/datasets-100/accident-100.csv')
+    accident_csv = pd.read_csv('datasets/accident.csv')
+    process_accident_csv(accident_csv)
 
 def filter_out_value(record, column, value):
     """ Filters a DataFrame based on a given column-value pair """
@@ -18,7 +20,7 @@ def process_person_csv(person_csv):
     # --- Imputing blanks in SEATING_POSITION ---
     # The only blanks in SEATING_POSITION are for 'drivers' in ROAD_USER_TYPE
     # Normalising blanks to nan values
-    filtered_person['SEATING_POSITION'].replace('', np.nan, inplace=True)
+    filtered_person.replace({'SEATING_POSITION': np.nan}, inplace=True)
     driver_mask = (filtered_person['SEATING_POSITION'].isna() &
                    (filtered_person['ROAD_USER_TYPE_DESC'] == 'Drivers'))
     # Imputing these rows to '1'
@@ -35,12 +37,37 @@ def process_person_csv(person_csv):
     filtered_person.to_csv('datasets/filtered_person.csv', index=False)
 
 def process_accident_csv(accident_csv):
+    # --- Normalising date values in accident_csv ---
+    accident_csv['ACCIDENT_DATE'] = pd.to_datetime(accident_csv['ACCIDENT_DATE'], format='%d/%m/%Y')
+
+    # --- Creating a filtered accident csv ---
     filtered_accident = accident_csv
+
+    # --- Adding a public holiday column to filtered_accident csv ---
+    public_holiday_column(filtered_accident)
+    night_day_column(filtered_accident)
+
+    filtered_accident.to_csv('datasets/filtered_accident.csv', index=False)
+
+def public_holiday_column(filtered_accident):
+    # --- Normalising values in public_holiday_csv
     public_holiday_csv = pd.read_csv('datasets/public_holiday_2012-2024.csv')
+    public_holiday_csv['Date'] = pd.to_datetime(public_holiday_csv['Date'], format='%d/%m/%Y')
+    public_holiday_csv['National_holiday'] = public_holiday_csv['National_holiday'].astype(bool)
 
+    # Extracting dates from accident_csv that fall on national holidays
+    national_holiday = public_holiday_csv.loc[public_holiday_csv['National_holiday'] == True, 'Date']
+
+    # --- Creating a new column in filtered_accident called PUBLIC_HOLIDAY
+    # Initialising everything to false
     filtered_accident['PUBLIC_HOLIDAY'] = 0
+    # Dates that fall on public holidays are set to 1
+    filtered_accident.loc[filtered_accident['ACCIDENT_DATE'].isin(national_holiday), 'PUBLIC_HOLIDAY'] = 1
 
+    # Possibly include regional holidays???
 
-
-
-
+def night_day_column(filtered_accident):
+    # --- Creating new column 'DAY'- 0 if night, 1 if day ---
+    # Light condition 1 = day, 2 = dusk/dawn
+    filtered_accident['DAY'] = 0
+    filtered_accident.loc[filtered_accident['LIGHT_CONDITION'].isin([1,2]),'DAY'] = 1
