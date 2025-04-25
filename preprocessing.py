@@ -27,7 +27,7 @@ def process_person_csv(person_csv):
     # --- Creating new column indicating whether a person was in an enclosed vehicle ---
     # Defaulting all values to 0 (is not in enclosed vehicle)
     filtered_person['IN_METAL_BOX'] = 0
-    filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isin(['Drivers', 'Passengers'])] = 1
+    filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isin(['Drivers', 'Passengers']), 'IN_METAL_BOX'] = 1
 
 
     filtered_person.to_csv('datasets/filtered_person.csv', index=False)
