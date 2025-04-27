@@ -9,6 +9,7 @@ def preprocessing():
     #accident_csv = pd.read_csv('datasets/datasets-100/accident-100.csv')
     accident_csv = pd.read_csv('datasets/accident.csv')
     process_accident_csv(accident_csv)
+    #print(accident_csv[accident_csv['DAY_OF_WEEK'] == 1])
 
 def filter_out_value(record, column, value):
     """ Filters a DataFrame based on a given column-value pair """
@@ -46,6 +47,7 @@ def process_accident_csv(accident_csv):
     # --- Adding a public holiday column to filtered_accident csv ---
     public_holiday_column(filtered_accident)
     night_day_column(filtered_accident)
+    day_of_week(filtered_accident)
 
     filtered_accident.to_csv('datasets/filtered_accident.csv', index=False)
 
@@ -71,3 +73,25 @@ def night_day_column(filtered_accident):
     # Light condition 1 = day, 2 = dusk/dawn
     filtered_accident['DAY'] = 0
     filtered_accident.loc[filtered_accident['LIGHT_CONDITION'].isin([1,2]),'DAY'] = 1
+
+def day_of_week(filtered_accident):
+    # --- Identifying mismatches in accident_csv ---
+    # Computing the expected DAY_OF_WEEK values from the description
+    expected = filtered_accident['DAY_WEEK_DESC'].map(day_of_week_map)
+
+    # Helper print statements to see incorrect rows
+    #mismatched = filtered_accident[filtered_accident['DAY_OF_WEEK'] != expected]
+    #print("Bad rows:\n", mismatched[['ACCIDENT_NO', 'DAY_OF_WEEK', 'DAY_WEEK_DESC']])
+
+    # Correcting only the mismatched rows within the dataset
+    filtered_accident.loc[filtered_accident['DAY_OF_WEEK'] != expected, 'DAY_OF_WEEK'] = expected
+
+day_of_week_map = {
+    'Sunday': 1,
+    'Monday': 2,
+    'Tuesday': 3,
+    'Wednesday': 4,
+    'Thursday': 5,
+    'Friday': 6,
+    'Saturday': 7,
+}
