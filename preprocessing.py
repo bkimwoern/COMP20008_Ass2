@@ -34,7 +34,6 @@ def process_person_csv(person_csv):
 
     # --- May have to impute EJECTED_CODE values = 9 to 0.
 
-
     filtered_person.to_csv('datasets/filtered_person.csv', index=False)
 
 def process_accident_csv(accident_csv):
@@ -44,9 +43,12 @@ def process_accident_csv(accident_csv):
     # --- Creating a filtered accident csv ---
     filtered_accident = accident_csv
 
-    # --- Adding a public holiday column to filtered_accident csv ---
+    # --- Preprocessing accident_csv ---
+    # Adding a public holiday boolean column to filtered_accident csv
     public_holiday_column(filtered_accident)
+    # Adding a night or day column to filtered_accident csv
     night_day_column(filtered_accident)
+    # Fixing incorrect DAY_OF_WEEK values in filtered_accident csv
     day_of_week(filtered_accident)
 
     filtered_accident.to_csv('datasets/filtered_accident.csv', index=False)
@@ -75,6 +77,17 @@ def night_day_column(filtered_accident):
     filtered_accident.loc[filtered_accident['LIGHT_CONDITION'].isin([1,2]),'DAY'] = 1
 
 def day_of_week(filtered_accident):
+    # --- Mapping for DAY_WEEK_DESC with matching DAY_OF_WEEK
+    day_of_week_map = {
+        'Sunday': 1,
+        'Monday': 2,
+        'Tuesday': 3,
+        'Wednesday': 4,
+        'Thursday': 5,
+        'Friday': 6,
+        'Saturday': 7,
+    }
+
     # --- Identifying mismatches in accident_csv ---
     # Computing the expected DAY_OF_WEEK values from the description
     expected = filtered_accident['DAY_WEEK_DESC'].map(day_of_week_map)
@@ -86,12 +99,4 @@ def day_of_week(filtered_accident):
     # Correcting only the mismatched rows within the dataset
     filtered_accident.loc[filtered_accident['DAY_OF_WEEK'] != expected, 'DAY_OF_WEEK'] = expected
 
-day_of_week_map = {
-    'Sunday': 1,
-    'Monday': 2,
-    'Tuesday': 3,
-    'Wednesday': 4,
-    'Thursday': 5,
-    'Friday': 6,
-    'Saturday': 7,
-}
+def process_vehicle_csv(filtered_vehicle_csv):
