@@ -9,7 +9,10 @@ def preprocessing():
     #accident_csv = pd.read_csv('datasets/datasets-100/accident-100.csv')
     accident_csv = pd.read_csv('datasets/accident.csv')
     process_accident_csv(accident_csv)
-    #print(accident_csv[accident_csv['DAY_OF_WEEK'] == 1])
+
+    filtered_vehicle_csv = pd.read_csv('datasets/filtered_vehicle.csv')
+    process_vehicle_body_type(filtered_vehicle_csv)
+    filtered_vehicle_csv.to_csv('datasets/filtered_vehicle_new.csv', index=False)
 
 def filter_out_value(record, column, value):
     """ Filters a DataFrame based on a given column-value pair """
@@ -99,4 +102,10 @@ def day_of_week(filtered_accident):
     # Correcting only the mismatched rows within the dataset
     filtered_accident.loc[filtered_accident['DAY_OF_WEEK'] != expected, 'DAY_OF_WEEK'] = expected
 
-def process_vehicle_csv(filtered_vehicle_csv):
+def process_vehicle_body_type(filtered_vehicle):
+    vehicle_body_map = {
+        'OF SHD': 'OF/SHD',
+        'SEDAN' : 'SED',
+    }
+    filtered_vehicle['VEHICLE_BODY_STYLE'] = filtered_vehicle['VEHICLE_BODY_STYLE'].replace(vehicle_body_map)
+    print(filtered_vehicle.head(10))
