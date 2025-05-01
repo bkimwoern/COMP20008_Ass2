@@ -37,7 +37,9 @@ def process_person_csv(person_csv):
     filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isin(['Drivers', 'Passengers']), 'IN_METAL_BOX'] = 1
 
     # --- May have to impute EJECTED_CODE values = 9 to 0.
-    print(filtered_person[filtered_person['INJ_LEVEL'] == 1 ])
+
+    fatalities = filtered_person[filtered_person['INJ_LEVEL'] == 1 ]
+    print(fatalities['INJ_LEVEL'])
     filtered_person.to_csv('datasets/filtered_person.csv', index=False)
 
 def process_accident_csv(accident_csv):
