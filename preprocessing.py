@@ -3,7 +3,7 @@ import pandas as pd
 
 def preprocessing():
     """Pre-processing person_csv"""
-    person_csv = pd.read_csv('datasets/datasets-100/person-100.csv')
+    person_csv = pd.read_csv('datasets/person.csv')
     process_person_csv(person_csv)
 
     #accident_csv = pd.read_csv('datasets/datasets-100/accident-100.csv')
