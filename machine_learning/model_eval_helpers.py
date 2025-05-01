@@ -7,7 +7,7 @@ def model_accuracy(model, X_train, y_train, X_test, y_test):
     testing_accuracy = model.score(X_test, y_test)
     print('Accuracy of training set:', training_accuracy)
     print('Accuracy of testing set:', testing_accuracy)
-    print('Accuracy difference:', testing_accuracy - training_accuracy)
+    print('Accuracy difference:', testing_accuracy - training_accuracy, '\n')
 
 def find_best_depth(X_train, y_train, X_test, y_test):
     depths = range(1, 11)
@@ -15,7 +15,7 @@ def find_best_depth(X_train, y_train, X_test, y_test):
     test_accuracies = []
 
     for depth in depths:
-        model = DecisionTreeClassifier(criterion='entropy', max_depth=depth,  class_weight='balanced')
+        model = DecisionTreeClassifier(criterion='entropy', max_depth=depth)
         model.fit(X_train, y_train)
         train_accuracies.append(model.score(X_train, y_train))
         test_accuracies.append(model.score(X_test, y_test))
