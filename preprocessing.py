@@ -14,6 +14,7 @@ def preprocessing():
     process_vehicle_body_type(filtered_vehicle_csv)
     filtered_vehicle_csv.to_csv('datasets/filtered_vehicle_new.csv', index=False)
 
+
 def filter_out_value(record, column, value):
     """ Filters a DataFrame based on a given column-value pair """
     return record[record[column] == value]
@@ -22,21 +23,21 @@ def process_person_csv(person_csv):
     filtered_person = person_csv
 
     # --- Imputing blanks in SEATING_POSITION ---
-    # The only blanks in SEATING_POSITION are for 'drivers' in ROAD_USER_TYPE
-    # Normalising blanks to nan values
+    #    The only blanks in SEATING_POSITION are for 'drivers' in ROAD_USER_TYPE
+    #    Normalising blanks to nan values
     filtered_person.replace({'SEATING_POSITION': np.nan}, inplace=True)
     driver_mask = (filtered_person['SEATING_POSITION'].isna() &
                    (filtered_person['ROAD_USER_TYPE_DESC'] == 'Drivers'))
-    # Imputing these rows to '1'
+    #   Imputing these rows to '1'
     filtered_person.loc[driver_mask, 'SEATING_POSITION'] = '1'
 
     # --- Creating new column indicating whether a person was in an enclosed vehicle ---
-    # Defaulting all values to 0 (is not in enclosed vehicle)
+    #   Defaulting all values to 0 (is not in enclosed vehicle)
     filtered_person['IN_METAL_BOX'] = 0
     filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isin(['Drivers', 'Passengers']), 'IN_METAL_BOX'] = 1
 
     # --- May have to impute EJECTED_CODE values = 9 to 0.
-
+    print(filtered_person[filtered_person['INJ_LEVEL'] == 1 ])
     filtered_person.to_csv('datasets/filtered_person.csv', index=False)
 
 def process_accident_csv(accident_csv):
@@ -47,11 +48,11 @@ def process_accident_csv(accident_csv):
     filtered_accident = accident_csv
 
     # --- Preprocessing accident_csv ---
-    # Adding a public holiday boolean column to filtered_accident csv
+    #   Adding a public holiday boolean column to filtered_accident csv
     public_holiday_column(filtered_accident)
-    # Adding a night or day column to filtered_accident csv
+    #   Adding a night or day column to filtered_accident csv
     night_day_column(filtered_accident)
-    # Fixing incorrect DAY_OF_WEEK values in filtered_accident csv
+    #   Fixing incorrect DAY_OF_WEEK values in filtered_accident csv
     day_of_week(filtered_accident)
 
     filtered_accident.to_csv('datasets/filtered_accident.csv', index=False)
@@ -62,13 +63,13 @@ def public_holiday_column(filtered_accident):
     public_holiday_csv['Date'] = pd.to_datetime(public_holiday_csv['Date'], format='%d/%m/%Y')
     public_holiday_csv['National_holiday'] = public_holiday_csv['National_holiday'].astype(bool)
 
-    # Extracting dates from accident_csv that fall on national holidays
+    # --- Extracting dates from accident_csv that fall on national holidays ---
     national_holiday = public_holiday_csv.loc[public_holiday_csv['National_holiday'] == True, 'Date']
 
     # --- Creating a new column in filtered_accident called PUBLIC_HOLIDAY
-    # Initialising everything to false
+    #   Initialising everything to false
     filtered_accident['PUBLIC_HOLIDAY'] = 0
-    # Dates that fall on public holidays are set to 1
+    #   Dates that fall on national holidays are set to 1
     filtered_accident.loc[filtered_accident['ACCIDENT_DATE'].isin(national_holiday), 'PUBLIC_HOLIDAY'] = 1
 
     # Possibly include regional holidays???
@@ -92,14 +93,14 @@ def day_of_week(filtered_accident):
     }
 
     # --- Identifying mismatches in accident_csv ---
-    # Computing the expected DAY_OF_WEEK values from the description
+    #   Computing the expected DAY_OF_WEEK values from the description
     expected = filtered_accident['DAY_WEEK_DESC'].map(day_of_week_map)
 
-    # Helper print statements to see incorrect rows
+    #   Helper print statements to see incorrect rows
     #mismatched = filtered_accident[filtered_accident['DAY_OF_WEEK'] != expected]
     #print("Bad rows:\n", mismatched[['ACCIDENT_NO', 'DAY_OF_WEEK', 'DAY_WEEK_DESC']])
 
-    # Correcting only the mismatched rows within the dataset
+    #   Correcting only the mismatched rows within the dataset
     filtered_accident.loc[filtered_accident['DAY_OF_WEEK'] != expected, 'DAY_OF_WEEK'] = expected
 
 def process_vehicle_body_type(filtered_vehicle):
@@ -108,4 +109,3 @@ def process_vehicle_body_type(filtered_vehicle):
         'SEDAN' : 'SED',
     }
     filtered_vehicle['VEHICLE_BODY_STYLE'] = filtered_vehicle['VEHICLE_BODY_STYLE'].replace(vehicle_body_map)
-    print(filtered_vehicle.head(10))
