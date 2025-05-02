@@ -36,10 +36,16 @@ def process_person_csv(person_csv):
     filtered_person['IN_METAL_BOX'] = 0
     filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isin(['Drivers', 'Passengers']), 'IN_METAL_BOX'] = 1
 
+    print(filter_out_value(filtered_person, 'HELMET_BELT_WORN', 9))
+    print(filtered_person.shape[0])
+    # --- Creating a new column 'UNPROTECTED'- 1 if no safety equipment was worn, 0 if worn
+    # Wore safety equipment ---
+    filtered_person['UNPROTECTED'] = filtered_person['HELMET_BELT_WORN'].apply(lambda x: 0 if x in [1, 3, 6] else 1)
+
     # --- May have to impute EJECTED_CODE values = 9 to 0.
 
-    fatalities = filtered_person[filtered_person['INJ_LEVEL'] == 1 ]
-    print(fatalities['INJ_LEVEL'])
+    #print(wore_equipment['HELMET_BELT_WORN'])
+
     filtered_person.to_csv('datasets/filtered_person.csv', index=False)
 
 def process_accident_csv(accident_csv):
@@ -56,6 +62,7 @@ def process_accident_csv(accident_csv):
     night_day_column(filtered_accident)
     #   Fixing incorrect DAY_OF_WEEK values in filtered_accident csv
     day_of_week(filtered_accident)
+    at_intersection(filtered_accident)
 
     filtered_accident.to_csv('datasets/filtered_accident.csv', index=False)
 
@@ -111,3 +118,6 @@ def process_vehicle_body_type(filtered_vehicle):
         'SEDAN' : 'SED',
     }
     filtered_vehicle['VEHICLE_BODY_STYLE'] = filtered_vehicle['VEHICLE_BODY_STYLE'].replace(vehicle_body_map)
+
+def at_intersection(filtered_accident):
+    filtered_accident['AT_INTERSECTION'] = filtered_accident['ROAD_GEOMETRY'].apply(lambda x: 1 if x in [1,2,3,4] else 0)
