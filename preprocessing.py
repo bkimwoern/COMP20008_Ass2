@@ -68,72 +68,44 @@ def imputing_safety_equipment(filtered_person):
         else 2 # Unknown
     )
 
-    print(filtered_person['IN_METAL_BOX'].value_counts())
+    # -- Randomly imputing unknown safety equipment usage IN an enclosed vehicle
+    random_imputation(filtered_person, 1)
+
+    # --- Randomly imputing unknown safety equipment usage NOT in an enclosed vehicle
+    random_imputation(filtered_person, 0)
+
+def random_imputation(filtered_person, is_encased):
     print('Before')
     print(filtered_person['UNPROTECTED'].value_counts())
 
     # --- Extracting records of unknown safety equipment usage IN an encased vehicle ---
-    unknown_encased = filter_out_value(filter_out_value(filtered_person, 'HELMET_BELT_WORN', 9.0),
-                                       'IN_METAL_BOX', 1)
-    print('Unknown encased value')
-    print(unknown_encased.shape[0])
+    unknown = filter_out_value(filter_out_value(filtered_person, 'HELMET_BELT_WORN', 9.0),
+                                       'IN_METAL_BOX', is_encased)
 
-    safety_worn_encased = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 0),
-                                           'IN_METAL_BOX', 1 )
-    safety_not_worn_encased = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 1),
-                                               'IN_METAL_BOX', 1)
+    safety_worn = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 0),
+                                           'IN_METAL_BOX', is_encased)
+    safety_not_worn = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 1),
+                                               'IN_METAL_BOX', is_encased)
 
     # --- Using weighted random imputation to impute 1 or 0 in 'UNPROTECTED', where use of safety equipment is unknown ---
-    num_safety_worn_encased = safety_worn_encased['HELMET_BELT_WORN'].shape[0]
-    num_safety_not_worn_encased = safety_not_worn_encased['HELMET_BELT_WORN'].shape[0]
-    num_total_encased = num_safety_worn_encased + num_safety_not_worn_encased
+    num_safety_worn = safety_worn['HELMET_BELT_WORN'].shape[0]
+    num_safety_not_worn = safety_not_worn['HELMET_BELT_WORN'].shape[0]
+    num_total = num_safety_worn + num_safety_not_worn
 
     #   Finding probabilities of person wearing/ not wearing safety equipment within an encased vehicle
-    probability_0 = num_safety_worn_encased / num_total_encased
-    probability_1 = num_safety_not_worn_encased  / num_total_encased
+    probability_0 = num_safety_worn / num_total
+    probability_1 = num_safety_not_worn / num_total
 
     #   Applying weighted random imputation to the 'UNPROTECTED' column where value is 2 (unknown if safety
     #   equipment was used)
-    unknown_encased['UNPROTECTED'] = unknown_encased['UNPROTECTED'].apply(
+    unknown['UNPROTECTED'] = unknown['UNPROTECTED'].apply(
         lambda x: np.random.choice([0, 1], p=[probability_0, probability_1]) if x == 2 else x
     )
     #   Assigning these imputed values back to filtered_person
-    filtered_person.loc[unknown_encased.index, 'UNPROTECTED'] = unknown_encased['UNPROTECTED']
+    filtered_person.loc[unknown.index, 'UNPROTECTED'] = unknown['UNPROTECTED']
 
-    print('After imputing IN encased vehicle')
+    print('After imputing IN_METAL_BOX =', is_encased)
     print(filtered_person['UNPROTECTED'].value_counts())
-
-    # --- Extracting records of unknown safety equipment usage NOT in an encased vehicle ---
-    unknown_exposed = filter_out_value(filter_out_value(filtered_person, 'HELMET_BELT_WORN', 9.0),
-                                       'IN_METAL_BOX', 0)
-    safety_worn_exposed = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 0),
-                                           'IN_METAL_BOX', 0)
-    safety_not_worn_exposed = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 1),
-                                               'IN_METAL_BOX', 0)
-
-    print('Unknown exposed value')
-    print(unknown_exposed.shape[0])
-
-    # --- Using weighted random imputation to impute 1 or 0 in 'UNPROTECTED', where use of safety equipment is unknown ---
-    num_safety_worn_exposed = safety_worn_exposed['HELMET_BELT_WORN'].shape[0]
-    num_safety_not_worn_exposed = safety_not_worn_exposed['HELMET_BELT_WORN'].shape[0]
-    num_total_exposed = num_safety_worn_exposed + num_safety_not_worn_exposed
-
-    #   Finding probabilities of person wearing/ not wearing safety equipment within an encased vehicle
-    pprobability_0 = num_safety_worn_exposed / num_total_exposed
-    pprobability_1 = num_safety_not_worn_exposed / num_total_exposed
-
-    #   Applying weighted random imputation to the 'UNPROTECTED' column where value is 2 (unknown if safety
-    #   equipment was used)
-    unknown_exposed['UNPROTECTED'] = unknown_exposed['UNPROTECTED'].apply(
-        lambda x: np.random.choice([0, 1], p=[pprobability_0, pprobability_1]) if x == 2 else x
-    )
-    #   Assigning these imputed values back to filtered_person
-    filtered_person.loc[unknown_exposed.index, 'UNPROTECTED'] = unknown_exposed['UNPROTECTED']
-
-    print('After imputing NOT in encased vehicle')
-    print(filtered_person['UNPROTECTED'].value_counts())
-    #print(filter_out_value(filtered_person, 'UNPROTECTED', 2))
 
 def public_holiday_column(filtered_accident):
     # --- Normalising values in public_holiday_csv
