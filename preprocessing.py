@@ -22,29 +22,30 @@ def filter_out_value(record, column, value):
 def process_person_csv(person_csv):
     filtered_person = person_csv
 
+    #pd.set_option('display.max_columns', None)
+    #pd.set_option('display.max_rows', None)
+    #pd.set_option('display.max_colwidth', None)
+
+    #pd.reset_option('display.max_rows')
+
     # --- Imputing blanks in SEATING_POSITION ---
     #    The only blanks in SEATING_POSITION are for 'drivers' in ROAD_USER_TYPE
-    #    Normalising blanks to nan values
-    filtered_person.replace({'SEATING_POSITION': np.nan}, inplace=True)
-    driver_mask = (filtered_person['SEATING_POSITION'].isna() &
-                   (filtered_person['ROAD_USER_TYPE_DESC'] == 'Drivers'))
-    #   Imputing these rows to '1'
-    filtered_person.loc[driver_mask, 'SEATING_POSITION'] = '1'
+    #    Replacing blanks and 'nan's' with 'D'
+    filtered_person.replace(r'^\s*$', 'D', regex=True, inplace=True)
+    #drivers = filter_out_value(filtered_person, 'ROAD_USER_TYPE_DESC', 'Drivers')
+    #print(drivers[['ACCIDENT_NO', 'SEATING_POSITION', 'ROAD_USER_TYPE_DESC']])
+
+    # Converting unknown variations in dataset to 'nan'
+    filtered_person.replace(['Unknown', 'Not Known', 'N/A', 'NK', '5-Dec', '0-4'], np.nan, inplace=True)
 
     # --- Creating new column indicating whether a person was in an enclosed vehicle ---
     #   Defaulting all values to 0 (is not in enclosed vehicle)
     filtered_person['IN_METAL_BOX'] = 0
     filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isin(['Drivers', 'Passengers']), 'IN_METAL_BOX'] = 1
+    filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isna(), 'IN_METAL_BOX'] = np.nan
 
-    print(filter_out_value(filtered_person, 'HELMET_BELT_WORN', 9))
-    print(filtered_person.shape[0])
-    # --- Creating a new column 'UNPROTECTED'- 1 if no safety equipment was worn, 0 if worn
-    # Wore safety equipment ---
-    filtered_person['UNPROTECTED'] = filtered_person['HELMET_BELT_WORN'].apply(lambda x: 0 if x in [1, 3, 6] else 1)
-
-    # --- May have to impute EJECTED_CODE values = 9 to 0.
-
-    #print(wore_equipment['HELMET_BELT_WORN'])
+    # Imputing not known values in 'HELMET_BELT_WORN' column
+    imputing_safety_equipment(filtered_person)
 
     filtered_person.to_csv('datasets/filtered_person.csv', index=False)
 
@@ -62,9 +63,47 @@ def process_accident_csv(accident_csv):
     night_day_column(filtered_accident)
     #   Fixing incorrect DAY_OF_WEEK values in filtered_accident csv
     day_of_week(filtered_accident)
+    # Adding a column that indicates whether accident occurred at an intersection (1) or not (0)
     at_intersection(filtered_accident)
 
     filtered_accident.to_csv('datasets/filtered_accident.csv', index=False)
+
+def imputing_safety_equipment(filtered_person):
+
+    # --- Creating a new column 'UNPROTECTED'- 1 if no safety equipment was worn, 0 if worn ---
+    filtered_person['UNPROTECTED'] = filtered_person['HELMET_BELT_WORN'].apply(
+        lambda x: 0 if x in [1, 3, 6] # Wore safety equipment
+        else 1 if x in [2, 4, 5, 7, 8] # Did not wear safety equipment
+        else 2 # Unknown
+    )
+
+    # --- Extracting records of unknown safety equipment usage IN an encased vehicle ---
+    unknown_encased = filter_out_value(filter_out_value(filtered_person, 'HELMET_BELT_WORN', 9.0),
+                                       'IN_METAL_BOX', 1)
+    print(unknown_encased)
+
+    safety_worn_encased = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 0),
+                                           'IN_METAL_BOX', 1 )
+    print(safety_worn_encased['HELMET_BELT_WORN'].value_counts())
+    #print(filter_out_value(safety_worn_encased, 'HELMET_BELT_WORN', 6.0))
+
+    safety_not_worn_encased = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 1),
+                                               'IN_METAL_BOX', 1)
+    print(safety_not_worn_encased['HELMET_BELT_WORN'].value_counts())
+
+    # --- Extracting records of unknown safety equipment usage NOT in an encased vehicle ---
+    unknown_exposed = filter_out_value(filter_out_value(filtered_person, 'HELMET_BELT_WORN', 9.0),
+                                       'IN_METAL_BOX', 0)
+    print(unknown_exposed)
+
+    safety_worn_exposed = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 0),
+                                           'IN_METAL_BOX', 0)
+    print(safety_worn_exposed['HELMET_BELT_WORN'].value_counts())
+
+    safety_not_worn_exposed = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 1),
+                                               'IN_METAL_BOX', 0)
+    print(safety_not_worn_exposed['HELMET_BELT_WORN'].value_counts())
+
 
 def public_holiday_column(filtered_accident):
     # --- Normalising values in public_holiday_csv
@@ -112,6 +151,10 @@ def day_of_week(filtered_accident):
     #   Correcting only the mismatched rows within the dataset
     filtered_accident.loc[filtered_accident['DAY_OF_WEEK'] != expected, 'DAY_OF_WEEK'] = expected
 
+def at_intersection(filtered_accident):
+    filtered_accident['AT_INTERSECTION'] = filtered_accident['ROAD_GEOMETRY'].apply(lambda x: 1 if x in [1,2,3,4] else 0)
+
+
 def process_vehicle_body_type(filtered_vehicle):
     vehicle_body_map = {
         'OF SHD': 'OF/SHD',
@@ -119,5 +162,11 @@ def process_vehicle_body_type(filtered_vehicle):
     }
     filtered_vehicle['VEHICLE_BODY_STYLE'] = filtered_vehicle['VEHICLE_BODY_STYLE'].replace(vehicle_body_map)
 
-def at_intersection(filtered_accident):
-    filtered_accident['AT_INTERSECTION'] = filtered_accident['ROAD_GEOMETRY'].apply(lambda x: 1 if x in [1,2,3,4] else 0)
+
+""""
+protection worn / (protection worn + protection not worn)
+
+then select 0 or 1, where the chance of selecting 1 is the number above 
+
+
+"""
