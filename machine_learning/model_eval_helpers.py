@@ -1,16 +1,18 @@
+import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
-def model_accuracy(model, X_train, y_train, X_test, y_test):
+def print_model_accuracy(model, X_train, y_train, X_test, y_test):
+    print("MODEL ACCURACY")
     training_accuracy = model.score(X_train, y_train)
     testing_accuracy = model.score(X_test, y_test)
     print('Accuracy of training set:', training_accuracy)
     print('Accuracy of testing set:', testing_accuracy)
     print('Accuracy difference:', testing_accuracy - training_accuracy, '\n')
 
-def find_best_depth(X_train, y_train, X_test, y_test):
-    depths = range(1, 11)
+def plot_best_depth(X_train, y_train, X_test, y_test):
+    depths = range(1, 21)
     train_accuracies = []
     test_accuracies = []
 
@@ -34,7 +36,7 @@ def plot_confusion_matrix(model, X_test, y_test, class_labels):
     y_pred = model.predict(X_test)
     c_mtrx = confusion_matrix(y_test, y_pred, labels=class_labels)
     disp = ConfusionMatrixDisplay(confusion_matrix=c_mtrx, display_labels=class_labels)
-    disp.plot()
+    disp.plot(cmap=plt.cm.BuGn)
     plt.title("Confusion Matrix")
     plt.show()
 
@@ -46,3 +48,22 @@ def plot_decision_tree(model, feature_names, class_labels):
               filled=True)
     plt.title("Decision Tree")
     plt.show()
+
+def print_feature_importances(model, X_columns):
+    print("FEATURE IMPORTANCES:")
+    importances = pd.Series(model.feature_importances_, index=X_columns).sort_values(ascending=False)
+    for feature, importance in importances.items():
+        print(f"{feature}: {importance:.4f}")
+
+
+def print_stats(model, X_train, y_train, X_test, y_test, X_columns, class_labels):
+    print('MAX_DEPTH:', model.max_depth, '\n')
+
+    # print accuracy of training and testing data
+    print_model_accuracy(model, X_train, y_train, X_test, y_test)
+
+    # print the sorted (desc) order of feature importances (cumulative information gain?)
+    print_feature_importances(model, X_columns)
+
+    # plot confusion matrix
+    plot_confusion_matrix(model, X_test, y_test, model.classes_)
