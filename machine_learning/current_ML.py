@@ -239,7 +239,7 @@ def fatality_model():
 
     # appropriate depth determined to be ?
     plot_best_depth(X_train, y_train, X_test, y_test)
-    model = DecisionTreeClassifier(criterion='entropy', max_depth=8)
+    model = DecisionTreeClassifier(criterion='entropy', max_depth=10)
     model.fit(X_train, y_train)
 
     # print stats of the model
