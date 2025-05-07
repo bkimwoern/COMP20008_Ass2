@@ -28,7 +28,7 @@ def process_person_csv(person_csv):
     filtered_person.replace(r'^\s*$', 'D', regex=True, inplace=True)
 
     # --- Converting unknown variations in dataset to 'nan' ---
-    filtered_person.replace(['Unknown', 'Not Known', 'N/A', 'NK', '5-Dec', '0-4'], np.nan, inplace=True)
+    filtered_person.replace(['Unknown', 'Not Known', 'N/A', 'NK', '5-Dec'], np.nan, inplace=True)
 
     # --- Creating new column indicating whether a person was in an enclosed vehicle ---
     #   Defaulting all values to 0 (is not in enclosed vehicle)
