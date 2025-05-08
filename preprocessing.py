@@ -2,6 +2,9 @@ import numpy as np
 import pandas as pd
 
 def preprocessing():
+    filtered_vehicle_csv = pd.read_csv('datasets/filtered_vehicle_new.csv')
+    process_vehicle_csv(filtered_vehicle_csv)
+
     """Pre-processing person_csv"""
     person_csv = pd.read_csv('datasets/person.csv')
     process_person_csv(person_csv)
@@ -10,10 +13,8 @@ def preprocessing():
     accident_csv = pd.read_csv('datasets/accident.csv')
     process_accident_csv(accident_csv)
 
-    filtered_vehicle_csv = pd.read_csv('datasets/filtered_vehicle.csv')
     process_vehicle_body_type(filtered_vehicle_csv)
     filtered_vehicle_csv.to_csv('datasets/filtered_vehicle_new.csv', index=False)
-
 
 def filter_out_value(record, column, value):
     """ Filters a DataFrame based on a given column-value pair """
@@ -31,16 +32,26 @@ def process_person_csv(person_csv):
     filtered_person.replace(['Unknown', 'Not Known', 'N/A', 'NK', '5-Dec'], np.nan, inplace=True)
 
     # --- Creating new column indicating whether a person was in an enclosed vehicle ---
-    #   Defaulting all values to 0 (is not in enclosed vehicle)
-    #   Join person_csv with filtered_vehicle, which has description of type of vehicle, then base it off that!!!
-    filtered_person['IN_METAL_BOX'] = 0
-    filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isin(['Drivers', 'Passengers']), 'IN_METAL_BOX'] = 1
-    filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isna(), 'IN_METAL_BOX'] = np.nan
+    in_metal_box(filtered_person)
 
     # --- Imputing not known values in 'HELMET_BELT_WORN' column ---
     imputing_safety_equipment(filtered_person)
 
     filtered_person.to_csv('datasets/filtered_person.csv', index=False)
+
+def in_metal_box(filtered_person):
+    filtered_vehicle_csv = pd.read_csv('datasets/filtered_vehicle.csv')
+
+    enclosed_vehicle = ['Bus/Coach', ]
+
+    #   Defaulting all values to 0 (is not in enclosed vehicle)
+    #   Join person_csv with filtered_vehicle, which has description of type of vehicle, then base it off that!!!
+    filtered_person['IN_METAL_BOX'] = 0
+
+
+    filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isin(['Drivers', 'Passengers']), 'IN_METAL_BOX'] = 1
+    filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isna(), 'IN_METAL_BOX'] = np.nan
+
 
 def process_accident_csv(accident_csv):
     # --- Normalising date values in accident_csv ---
@@ -161,6 +172,9 @@ def day_of_week(filtered_accident):
 def at_intersection(filtered_accident):
     filtered_accident['AT_INTERSECTION'] = filtered_accident['ROAD_GEOMETRY'].apply(lambda x: 1 if x in [1,2,3,4] else 0)
 
+def process_vehicle_csv(filtered_vehicle_csv):
+    process_vehicle_csv(filtered_vehicle_csv)
+    process_vehicle_type(filtered_vehicle_csv)
 
 def process_vehicle_body_type(filtered_vehicle):
     vehicle_body_map = {
@@ -169,4 +183,19 @@ def process_vehicle_body_type(filtered_vehicle):
     }
     filtered_vehicle['VEHICLE_BODY_STYLE'] = filtered_vehicle['VEHICLE_BODY_STYLE'].replace(vehicle_body_map)
 
-
+def process_vehicle_type(filtered_vehicle_csv):
+    # Not applicable vehicle_body_styles:
+        # P MVR
+        # WAGON
+        # S WAG
+        # TRAY
+        # WAGON
+        # TRAY
+        # WAGON
+        # TIPPER
+        # CONVRT
+        # WAGON
+        # SED
+        # TIPPER
+        # SKIP C
+        # SKIP C
