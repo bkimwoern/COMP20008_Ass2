@@ -133,7 +133,7 @@ ax.set_yticklabels(["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Fri
 
 ax.set_xlabel('Hour')
 ax.set_zlabel('Weighted people killed')
-ax.set_title(f"k = {len(set(clusters.labels_))}")
+ax.set_title(f"Day, Time clustering against weighted deaths; k= {len(set(clusters.labels_))}")
 pt.savefig('DayTimeClustering.png')
 
 outputClusters(clusters.labels_, ['DAY_OF_WEEK', 'hour'], False, time_data)

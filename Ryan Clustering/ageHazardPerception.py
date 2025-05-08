@@ -108,7 +108,6 @@ person_data = person_data[person_data['MAX_AGE'] != 0]
 
 # Merge accident and person data by accident number
 crash_data = pd.merge(accident_data, person_data, how='inner', on='ACCIDENT_NO')
-crash_data.to_csv('newdata.csv', index=False)
 
 # Filter down to attributes we want to cluster on
 cluster_data = crash_data[['SPEED_ZONE', 'UNPROTECTED']]
