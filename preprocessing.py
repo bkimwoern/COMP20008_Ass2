@@ -32,6 +32,7 @@ def process_person_csv(person_csv):
 
     # --- Creating new column indicating whether a person was in an enclosed vehicle ---
     #   Defaulting all values to 0 (is not in enclosed vehicle)
+    #   Join person_csv with filtered_vehicle, which has description of type of vehicle, then base it off that!!!
     filtered_person['IN_METAL_BOX'] = 0
     filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isin(['Drivers', 'Passengers']), 'IN_METAL_BOX'] = 1
     filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isna(), 'IN_METAL_BOX'] = np.nan
@@ -58,6 +59,7 @@ def process_accident_csv(accident_csv):
     # Adding a column that indicates whether accident occurred at an intersection (1) or not (0)
     at_intersection(filtered_accident)
 
+    #   REMANDER 2 VALUES USE PROPORTIONAL RANDOM IMPUTATION TO IMPUTE
     filtered_accident.to_csv('datasets/filtered_accident.csv', index=False)
 
 def imputing_safety_equipment(filtered_person):
@@ -73,6 +75,9 @@ def imputing_safety_equipment(filtered_person):
 
     # --- Randomly imputing unknown safety equipment usage NOT in an enclosed vehicle
     random_imputation(filtered_person, 0)
+
+    metal = filter_out_value(filtered_person, 'IN_METAL_BOX', 1)
+    print(filter_out_value(metal, 'UNPROTECTED', 2))
 
 def random_imputation(filtered_person, is_encased):
     print('Before')
