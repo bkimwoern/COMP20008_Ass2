@@ -76,7 +76,7 @@ def print_stats(model, X_train_and_validation, y_train_and_validation, X_test, y
     print_feature_importances(model, X_columns)
 
     # plot confusion matrix
-    plot_confusion_matrix(model, X_test, y_test, model.classes_)
+    plot_confusion_matrix(model, X_test, y_test, class_labels)
 
 
 # def print_statistics(model, X_test, y_test, class_labels):
