@@ -1,0 +1,58 @@
+{
+    "RESTRAINT_WORN": {
+        "mean": 0.0,
+        "median": 0.0,
+        "std_dev": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "count": 930.0
+    },
+    "SPEED_ZONE": {
+        "mean": 100.82795698924731,
+        "median": 100.0,
+        "std_dev": 3.1575891660455233,
+        "min": 90.0,
+        "max": 110.0,
+        "count": 930.0
+    },
+    "MAX_AGE": {
+        "mean": 42.66129032258065,
+        "median": 39.0,
+        "std_dev": 17.194959660623713,
+        "min": 15.0,
+        "max": 70.0,
+        "count": 930.0
+    },
+    "SEX": {
+        "mean": 0.7311827956989247,
+        "median": 1.0,
+        "std_dev": 0.4435832406834271,
+        "min": 0.0,
+        "max": 1.0,
+        "count": 930.0
+    },
+    "LIGHT_CONDITION": {
+        "mean": 2.503225806451613,
+        "median": 1.0,
+        "std_dev": 1.9087048688024417,
+        "min": 1.0,
+        "max": 9.0,
+        "count": 930.0
+    },
+    "severity_index": {
+        "mean": 8.736559139784946,
+        "median": 5.0,
+        "std_dev": 10.309550004809404,
+        "min": 3.0,
+        "max": 54.0,
+        "count": 930.0
+    },
+    "SEVERITY": {
+        "mean": 1.0,
+        "median": 1.0,
+        "std_dev": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "count": 930.0
+    }
+}
