@@ -1,5 +1,8 @@
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split,StratifiedKFold
+from sklearn.feature_selection import mutual_info_regression
 from sklearn.tree import DecisionTreeClassifier, plot_tree, DecisionTreeRegressor
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score, recall_score, precision_score
 
@@ -34,12 +37,12 @@ def plot_best_depth(X_train, y_train, X_test, y_test):
     plt.show()
 
 
-def plot_confusion_matrix(model, X_test, y_test, class_labels):
+def plot_confusion_matrix(model, X_test, y_test, class_labels, plot=True):
     y_pred = model.predict(X_test)
     c_mtrx = confusion_matrix(y_test, y_pred, labels=class_labels)
-    f1_score(y_test, y_pred, class_labels)
-    recall_score(y_test, y_pred, class_labels)
-    precision_score(y_test, y_pred, class_labels)
+    f1_score(y_test, y_pred, average="binary")
+    recall_score(y_test, y_pred, average="binary")
+    precision_score(y_test, y_pred, average="binary")
     disp = ConfusionMatrixDisplay(confusion_matrix=c_mtrx, display_labels=class_labels)
     disp.plot(cmap=plt.cm.BuGn)
     plt.title("Confusion Matrix")
@@ -62,11 +65,11 @@ def print_feature_importances(model, X_columns):
         print(f"{feature}: {importance:.4f}")
 
 
-def print_stats(model, X_train, y_train, X_test, y_test, X_columns, class_labels):
+def print_stats(model, X_train_and_validation, y_train_and_validation, X_test, y_test, X_columns, class_labels):
     print('MAX_DEPTH:', model.max_depth, '\n')
 
     # print accuracy of training and testing data
-    print_model_accuracy(model, X_train, y_train, X_test, y_test)
+    print_model_accuracy(model, X_train_and_validation, y_train_and_validation, X_test, y_test)
 
     # print the sorted (desc) order of feature importances (cumulative information gain?)
     print_feature_importances(model, X_columns)
@@ -92,7 +95,8 @@ def plot_mean_squared_errors(train, test, X_columns, y_train, y_test):
     for x in X_columns:
         X_train = train[x].values.reshape(-1, 1)  # reshape(-1, 1) is used to reshape the time_on_site column of the train dataset into a 2-dimensional array of size (n_samples, 1)
         X_test = test[x].values.reshape(-1, 1)
-        model = DecisionTreeRegressor().fit(X_train, y_train)  # LinearRegression()
+        model = DecisionTreeRegressor(criterion='mean_squared_error', max_depth=4)
+        model.fit(X_train, y_train)  # LinearRegression()
         y_predict = model.predict(X_test)
 
         # Plot the scatter plot and the line of regression
@@ -103,3 +107,68 @@ def plot_mean_squared_errors(train, test, X_columns, y_train, y_test):
         plt.ylabel('fatal')
 
         plt.show()
+
+def find_best_depth_cv(X, y, depths=range(1,11), k=5, print_metric_summary=True):
+    skf = StratifiedKFold(n_splits=k, random_state=42, shuffle=True)
+    metrics_per_depth = {}
+    metrics_summary = {}
+    for depth in depths:
+        metrics_per_depth[depth] = {"f1": [], "recall": [], "precision": []}
+
+
+        for train_index, validation_index in skf.split(X, y):
+            # determining indexes of training and validation set from the skf.get_N_splits(X, y)
+            X_train = X.iloc[train_index]
+            y_train = y.iloc[train_index]
+            X_validation = X.iloc[validation_index]
+            y_validation = y.iloc[validation_index]
+
+            # training the model on our training portion
+            model = DecisionTreeClassifier(criterion='entropy', max_depth=depth)
+            model.fit(X_train, y_train)
+
+            # predicting class label based on validation set
+            y_prediction = model.predict(X_validation)
+
+            # scoring
+            metrics_per_depth[depth]["f1"].append(f1_score(y_validation, y_prediction, average='binary'))
+            metrics_per_depth[depth]["recall"].append(recall_score(y_validation, y_prediction, average='binary'))
+            metrics_per_depth[depth]["precision"].append(precision_score(y_validation, y_prediction, average='binary'))
+
+    # for each depth, we are appending the average f1 score, recall and precision across each fold,
+    # then append it to the summary
+    for depth in metrics_per_depth:
+        metrics_summary[depth] = {
+            "average_f1": np.mean(metrics_per_depth[depth]["f1"]),
+            "average_recall": np.mean(metrics_per_depth[depth]["recall"]),
+            "average_precision": np.mean(metrics_per_depth[depth]["precision"])}
+
+    # calculating max_depth hyprparameter based on the depth yielding highest F1 score
+    best_depth = max(metrics_summary, key=lambda x: metrics_summary[x]["average_f1"])
+
+    # printing average evaluation metric for each detph, as well as the overall best depth based on F1 score.
+    if print_metric_summary:
+        print("\nAverage Evaluation Scores per Depth:")
+        for depth in metrics_per_depth:
+            f1 = metrics_summary[depth]["average_f1"]
+            recall = metrics_summary[depth]["average_recall"]
+            precision = metrics_summary[depth]["average_precision"]
+            print(f"    Depth {depth}: F1={f1:3f}, Recall={recall:3f}, Precision={precision:3f}")
+
+        print(f"\nBest Depth by F1 Score: {best_depth}")
+
+    # return best depth
+    return best_depth
+
+def plot_best_depth_cv(metrics_summary, depths):
+    plt.figure(figsize=(10, 6))
+    plt.plot(depths, [metrics_summary[d]["average_f1"] for d in depths], marker='o', label='Average F1 Score')
+    plt.plot(depths, [metrics_summary[d]["average_recall"] for d in depths], marker='s', label='Average Recall score')
+    plt.plot(depths, [metrics_summary[d]["average_precision"] for d in depths], marker='^',
+             label='Average Precision score')
+    plt.xlabel('Max Depth')
+    plt.ylabel('Evaluation Scores')
+    plt.title('Decision Tree Evaluation Metrics vs Max Depth')
+    plt.xticks(depths)
+    plt.legend()
+    plt.show()
