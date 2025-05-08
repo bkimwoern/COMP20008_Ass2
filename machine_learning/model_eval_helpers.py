@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from collections import Counter
 from sklearn.model_selection import train_test_split,StratifiedKFold
-from sklearn.feature_selection import mutual_info_regression
+from sklearn.feature_selection import mutual_info_classif
 from sklearn.tree import DecisionTreeClassifier, plot_tree, DecisionTreeRegressor
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score, recall_score, precision_score
 
@@ -59,7 +60,7 @@ def plot_decision_tree(model, feature_names, class_labels):
     plt.show()
 
 def print_feature_importances(model, X_columns):
-    print("FEATURE IMPORTANCES:")
+    print("FEATURE IMPORTANCES (cumulative information gain per class):")
     importances = pd.Series(model.feature_importances_, index=X_columns).sort_values(ascending=False)
     for feature, importance in importances.items():
         print(f"{feature}: {importance:.4f}")
@@ -108,10 +109,14 @@ def plot_mean_squared_errors(train, test, X_columns, y_train, y_test):
 
         plt.show()
 
-def find_best_depth_cv(X, y, depths=range(1,11), k=5, print_metric_summary=True):
+
+# hyperparameter tuning using stratified cross validation
+def find_best_depth_cv(X, y, depths=range(1,11), k=5, top_k=15, print_metric_summary=True):
     skf = StratifiedKFold(n_splits=k, random_state=42, shuffle=True)
     metrics_per_depth = {}
     metrics_summary = {}
+
+    top_feature_counter = Counter()
     for depth in depths:
         metrics_per_depth[depth] = {"f1": [], "recall": [], "precision": []}
 
@@ -122,6 +127,14 @@ def find_best_depth_cv(X, y, depths=range(1,11), k=5, print_metric_summary=True)
             y_train = y.iloc[train_index]
             X_validation = X.iloc[validation_index]
             y_validation = y.iloc[validation_index]
+
+            mi = mutual_info_classif(X_train, y_train, discrete_features='auto', random_state=42)
+            mi_series = pd.Series(mi, index=X_train.columns)
+            top_features = mi_series.sort_values(ascending=False).head(top_k).index.tolist()
+            top_feature_counter.update(top_features)
+
+            X_train = X_train[top_features]
+            X_validation = X_validation[top_features]
 
             # training the model on our training portion
             model = DecisionTreeClassifier(criterion='entropy', max_depth=depth)
@@ -145,6 +158,7 @@ def find_best_depth_cv(X, y, depths=range(1,11), k=5, print_metric_summary=True)
 
     # calculating max_depth hyprparameter based on the depth yielding highest F1 score
     best_depth = max(metrics_summary, key=lambda x: metrics_summary[x]["average_f1"])
+    feature_selection = [feature for feature, _ in top_feature_counter.most_common(top_k)]
 
     # printing average evaluation metric for each detph, as well as the overall best depth based on F1 score.
     if print_metric_summary:
@@ -157,8 +171,15 @@ def find_best_depth_cv(X, y, depths=range(1,11), k=5, print_metric_summary=True)
 
         print(f"\nBest Depth by F1 Score: {best_depth}")
 
-    # return best depth
-    return best_depth
+        print("\nMost Frequently Selected Features By M.I, Across all folds (top_k=%d):" % top_k)
+        for feature, count in top_feature_counter.most_common(top_k):
+            print(f"{feature}: selected in {count} folds")
+
+    plot_best_depth_cv(metrics_summary, depths)
+
+
+    # return best depth and updated feature selection based on most frequently selected features yielding most M.I
+    return best_depth, feature_selection
 
 def plot_best_depth_cv(metrics_summary, depths):
     plt.figure(figsize=(10, 6))

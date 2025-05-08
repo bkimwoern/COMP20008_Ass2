@@ -10,7 +10,7 @@ from sklearn.tree import DecisionTreeClassifier, plot_tree, DecisionTreeRegresso
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
-from machine_learning.model_eval_helpers import find_best_depth_cv
+from model_eval_helpers import find_best_depth_cv
 from model_eval_helpers import (print_stats,
                                 plot_decision_tree,
                                 plot_best_depth,
@@ -20,8 +20,8 @@ from model_eval_helpers import (print_stats,
 # fatality model where IS_LETHAL (1, 0) is the class label
 def fatality_model_dt():
     # reading in csv's relevant to research exploration for time-correlated factors
-    accident_df = pd.read_csv('../datasets/filtered_accident.csv')
-    person_df = pd.read_csv('../datasets/filtered_person.csv')
+    accident_df = pd.read_csv('datasets/filtered_accident.csv')
+    person_df = pd.read_csv('datasets/filtered_person.csv')
 
     # removes speed beyond the range of 120km/h
     accident_df = accident_df[accident_df['SPEED_ZONE'] < 120]
@@ -180,19 +180,22 @@ def fatality_model_dt():
     y_test = test[y_column]
 
     # find the best depth using cross validation, print
-    best_depth = find_best_depth_cv(X_train_and_validation, y_train_and_validation)
+    best_depth, feature_selection = find_best_depth_cv(X_train_and_validation, y_train_and_validation)
+
+    X_train_and_validation = X_train_and_validation[feature_selection]
+    X_test = X_test[feature_selection]
 
     # appropriate depth determined to be ?
     model = DecisionTreeClassifier(criterion='entropy', max_depth=best_depth)
     model.fit(X_train_and_validation, y_train_and_validation)
 
     # print stats of the model
-    print_stats(model, X_train_and_validation, y_train_and_validation, X_test, y_test, X_columns, [1, 0])
+    print_stats(model, X_train_and_validation, y_train_and_validation, X_test, y_test, feature_selection, [1, 0])
 
 def fatality_model_rg():
     # reading in csv's relevant to research exploration for time-correlated factors
-    accident_df = pd.read_csv('../datasets/filtered_accident.csv')
-    person_df = pd.read_csv('../datasets/filtered_person.csv')
+    accident_df = pd.read_csv('datasets/filtered_accident.csv')
+    person_df = pd.read_csv('datasets/filtered_person.csv')
 
     # removes speed beyond the range of 120km/h
     accident_df = accident_df[accident_df['SPEED_ZONE'] < 120]
