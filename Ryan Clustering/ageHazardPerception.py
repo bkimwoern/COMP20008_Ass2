@@ -48,7 +48,7 @@ def outputClusters(clustersLabels, sortFeatures, ascending, clusters_data):
     i = 0
     for cluster in clusters:
         dfCluster = pd.DataFrame(cluster, columns=clusters_data.columns).round(decimals=2).sort_values(by=sortFeatures, ascending=ascending)
-        dfCluster.to_csv('outputs/cluster' + str(i) + '.csv', index=False)
+        dfCluster.to_csv('hazardOutput/cluster' + str(i) + '.csv', index=False)
 
 
         stats = {}
@@ -64,7 +64,7 @@ def outputClusters(clustersLabels, sortFeatures, ascending, clusters_data):
             }
 
         # Save to JSON file
-        with open('outputs/dataC' + str(i) + '.json', 'w') as f:
+        with open('hazardOutput/dataC' + str(i) + '.json', 'w') as f:
             json.dump(stats, f, indent=4)
 
         i = i + 1
@@ -111,7 +111,7 @@ crash_data = pd.merge(accident_data, person_data, how='inner', on='ACCIDENT_NO')
 crash_data.to_csv('newdata.csv', index=False)
 
 # Filter down to attributes we want to cluster on
-cluster_data = crash_data[['SPEED_ZONE', 'RESTRAINT_WORN']]
+cluster_data = crash_data[['SPEED_ZONE', 'UNPROTECTED']]
 # ['SPEED_ZONE', 'RESTRAINT_WORN'] with k = 3
 # ['SPEED_ZONE', 'MAX_AGE', 'RESTRAINT_WORN'] with k = 3,4
 # ['SPEED_ZONE', 'MAX_AGE']
@@ -124,7 +124,7 @@ numeric_cols = normalised_data.select_dtypes(include='number').columns
 normalised_data[numeric_cols] = (normalised_data[numeric_cols] - normalised_data[numeric_cols].min()) / (normalised_data[numeric_cols].max() - normalised_data[numeric_cols].min())
 
 # Using elbow method to find best k value: The following code is from week 6 workshop
-seed = 30
+seed = 33 # this seed when using RESTRAINT_WORN
 distortions = []
 k_range = range(1, 15)
 for k in k_range:
@@ -165,7 +165,7 @@ pt.savefig('hardardCluster.png')
 
 
 # Outputting clusters to individual CSV files
-crash_data = crash_data[['RESTRAINT_WORN', 'SPEED_ZONE', 'MAX_AGE', 'SEX', 'LIGHT_CONDITION', 'severity_index', 'SEVERITY']]
+crash_data = crash_data[['UNPROTECTED', 'SPEED_ZONE', 'MAX_AGE', 'SEX', 'LIGHT_CONDITION', 'severity_index', 'SEVERITY']]
 outputClusters(clusters.labels_, ['MAX_AGE'], True, crash_data)
 
 
