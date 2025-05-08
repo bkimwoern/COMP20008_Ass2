@@ -10,11 +10,14 @@ Crash Severity
 Plot against: Aga vs Crash Severity
 """
 import matplotlib.pyplot as pt
-import numpy as np
 import pandas as pd
-from seaborn import clustermap
 from sklearn.cluster import KMeans
+import json
 
+"""
+Function takes in age interval and returns the upperbound of the interval.
+If a value is unable to be turned into an integer the function returns 0
+"""
 def maxage(age_interval):
     value = 0
     if '-' in age_interval:
@@ -27,24 +30,77 @@ def maxage(age_interval):
     except ValueError:
         return 0
 
+"""
+Function takes in clusters, and sorting features. It out puts each cluster to its own CSV and also output one 
+varible statiics on all columns for the cluster to a seperate JSON file.
+"""
+def outputClusters(clustersLabels, sortFeatures, ascending, clusters_data):
+    numClusters = len(set(clustersLabels)) # The number of clusters
+    clusters = [[] for _ in range(numClusters)] # Creates a array of lists to hold cluster values
 
+    i=0
+    for row in clusters_data.iterrows():
+        clusters[clustersLabels[i]].append(row[1])
+        i = i + 1
+
+    i = 0
+    for cluster in clusters:
+        dfCluster = pd.DataFrame(cluster, columns=clusters_data.columns).round(decimals=2).sort_values(by=sortFeatures, ascending=ascending)
+        dfCluster.to_csv('outputs/cluster' + str(i) + '.csv', index=False)
+
+
+        stats = {}
+        # Loop over numeric columns and calculate statistics
+        for col in dfCluster.columns:
+            stats[col] = {
+                'mean': float(dfCluster[col].mean()),
+                'median': float(dfCluster[col].median()),
+                'std_dev': float(dfCluster[col].std()),
+                'min': float(dfCluster[col].min()),
+                'max': float(dfCluster[col].max()),
+                'count': float(dfCluster[col].count()),
+            }
+
+        # Save to JSON file
+        with open('outputs/dataC' + str(i) + '.json', 'w') as f:
+            json.dump(stats, f, indent=4)
+
+        i = i + 1
+
+
+killMulti = 3
+injurySeries = 2
+injury = 1
 
 
 # Importing data
 accident_data = pd.read_csv('../datasets/filtered_accident.csv')
 person_data = pd.read_csv('../datasets/person.csv')
-accident_data = accident_data[accident_data['SPEED_ZONE'] < 120]
 
-# Only looking at drivers and passanages
-person_data = person_data[~person_data['ROAD_USER_TYPE'].isin([1,7,9])]
+# Taking realistic speed zone for Australia
+accident_data = accident_data[accident_data['SPEED_ZONE'] <= 130]
+# Only taking fatal accidents
+accident_data = accident_data[accident_data['SEVERITY'] == 1]
+
+# Making a severity index that weights deadly crashes higher based on kills, serious injuries and injuries
+accident_data['severity_index'] = accident_data['NO_PERSONS_KILLED'] * killMulti + accident_data['NO_PERSONS_INJ_2'] * injurySeries + accident_data['NO_PERSONS_INJ_3'] * injury
+
+
+
+# Only looking at drivers and passangers risk assesment
+person_data = person_data[~person_data['ROAD_USER_TYPE'].isin([1,6,9])]
+
+# Removing values where the age group is unknown
 person_data = person_data[person_data['AGE_GROUP'] != 'Unknown']
-print(person_data)
 
 # Creating new column called restriats worn
-person_data['RESTRAINT_WORN'] = person_data['HELMET_BELT_WORN'].apply(lambda x: 1 if x in [1, 4, 7] else 0)
+person_data['RESTRAINT_WORN'] = person_data['HELMET_BELT_WORN'].apply(lambda x: 1 if x in [1, 3, 6] else 0)
+
+# Cleaning sex and assigning number, 1 if a man and 0 if a female
+person_data = person_data[person_data['SEX'].isin(['M', 'F'])]
 person_data['SEX'] = person_data['SEX'].apply(lambda x: 1 if x == 'M' else 0)
 
-# Take the max possible age of person
+# Take the max possible age of person, and clean
 person_data['MAX_AGE'] = person_data['AGE_GROUP'].apply(maxage)
 person_data.to_csv('newperson.csv', index=False)
 person_data = person_data[person_data['MAX_AGE'] != 0]
@@ -54,10 +110,20 @@ person_data = person_data[person_data['MAX_AGE'] != 4]
 crash_data = pd.merge(accident_data, person_data, how='inner', on='ACCIDENT_NO')
 crash_data.to_csv('newdata.csv', index=False)
 
-cluster_data1 = crash_data.groupby('SEVERITY', group_keys=False).sample(n=2000)
-cluster_data1 = cluster_data1.groupby('MAX_AGE', group_keys=False).sample(n=100)
 
-cluster_data = cluster_data1[['RESTRAINT_WORN', 'SPEED_ZONE', 'MAX_AGE', 'SEX', 'LIGHT_CONDITION']]
+crash_data = crash_data[crash_data['SEVERITY'] != 4]
+
+# Sample the data to get a even distrubution of seversity and age group
+#cluster_data1 = crash_data.groupby('SEVERITY', group_keys=False).sample(n=crash_data['SEVERITY'].value_counts().min(), replace=True)
+cluster_data2 = crash_data.groupby('MAX_AGE', group_keys=False).sample(n=crash_data['MAX_AGE'].value_counts().min())
+cluster_data2 = crash_data
+# Filter down to attributes we want to cluster on
+cluster_data = cluster_data2[['SPEED_ZONE', 'RESTRAINT_WORN']]
+# ['SPEED_ZONE', 'RESTRAINT_WORN'] with k = 3
+# ['SPEED_ZONE', 'MAX_AGE', 'RESTRAINT_WORN'] with k = 3,4
+# ['SPEED_ZONE', 'MAX_AGE']
+
+# ['SPEED_ZONE', 'MAX_AGE', 'RESTRAINT_WORN'] k =3 when looking at SEVERITY ==1
 
 # Copy data to normalise
 normalised_data = cluster_data.copy(deep=True)
@@ -81,105 +147,53 @@ pt.savefig('ageHazardElbow.png')
 
 print(normalised_data)
 
-# K value of 7 or 8 was found to be useful
 clusters = KMeans(n_clusters=4)
 clusters.fit(normalised_data)
 
 colormap = {0: 'red', 1: 'green', 2: 'blue', 3: 'darkviolet', 4: 'orange', 5: 'cadetblue', 6: 'orchid', 7: 'lime'}
 
-# Plotting and saving figure
+
+# Plotting and saving figure, 3 dimensional
 fig = pt.figure(figsize=(7, 7))
 ax = pt.axes(projection="3d")
-ax.scatter(cluster_data1['MAX_AGE'],
-           cluster_data1['SEVERITY'],
-           c=[colormap.get(x) for x in clusters.labels_])
+ax.scatter(cluster_data2['MAX_AGE'],
+           cluster_data2['SPEED_ZONE'],
+           cluster_data2['severity_index'],
+           c=[colormap.get(x) for x in clusters.labels_], alpha=0.2)
 
 
 ax.set_xlabel('MAX_AGE')
-ax.set_ylabel('SEVERITY')
+ax.set_ylabel('SPEED_ZONE')
+ax.set_zlabel('severity_index')
 ax.set_title(f"k = {len(set(clusters.labels_))}")
 
-pt.savefig('DayTimeClustering.png')
+pt.savefig('hardardCluster.png')
+
 
 # Clustering Data
-clusters = KMeans(n_clusters=3)
+clusters = KMeans(n_clusters=4)
 clusters.fit(normalised_data)
 
+
 # Colour map to assign different colour to each dot in scatterplot corresponding to its assigned cluser
-colourmap = {0: 'cadetblue', 1: 'green', 2: 'blue'}
 
 # Plotting coloured scatter plot
 pt.figure(figsize=(12, 10))
-pt.scatter(cluster_data1['MAX_AGE'], cluster_data1['SEVERITY'],
-           c=[colourmap.get(x) for x in clusters.labels_], alpha=0.4)
+pt.scatter(cluster_data2['MAX_AGE'], cluster_data2['severity_index'],
+           c=[colormap.get(x) for x in clusters.labels_], alpha=0.4)
 pt.xlabel('MAX_AGE')
-pt.ylabel('SEVERITY')
+pt.ylabel('severity_index')
 pt.title('Crashes based on manufacture year, brand make, and body style: Coloured Based on K Means clustering')
 pt.savefig('task3_3_scattercolour.png')
 
+# Outputting clusters to individual CSV files
+cluster_data2 = cluster_data2[['RESTRAINT_WORN', 'SPEED_ZONE', 'MAX_AGE', 'SEX', 'LIGHT_CONDITION', 'severity_index', 'SEVERITY']]
+outputClusters(clusters.labels_, ['MAX_AGE'], True, cluster_data2)
 
 
-#NOTES, YOU DONT NEED TO USE GROUPBY. YOU CAN JUST CLUSTER THE RAW DATASET
-cluster0lst = []
-cluster1lst = []
-cluster2lst = []
-cluster3lst = []
-cluster4lst = []
-cluster5lst = []
-cluster6lst = []
-cluster7lst = []
+# To do:
+"""
+- Create a severity_index column
+- Get all one varible data from the clusters and categories the clusters
 
-cluster_data1 = cluster_data1[['SEVERITY', 'MAX_AGE', 'SEX']]
-i = 0
-for row in cluster_data1.iterrows():
-    if clusters.labels_[i] == 0:
-        cluster0lst.append(row[1])
-    elif clusters.labels_[i] == 1:
-        cluster1lst.append(row[1])
-    elif clusters.labels_[i] == 2:
-        cluster2lst.append(row[1])
-    elif clusters.labels_[i] == 3:
-        cluster3lst.append(row[1])
-    elif clusters.labels_[i] == 4:
-        cluster4lst.append(row[1])
-    elif clusters.labels_[i] == 5:
-        cluster5lst.append(row[1])
-    elif clusters.labels_[i] == 6:
-        cluster6lst.append(row[1])
-    elif clusters.labels_[i] == 7:
-        cluster7lst.append(row[1])
-    else:
-        print("ERROR")
-        break
-    i = i + 1
-
-cluster0 = pd.DataFrame(cluster0lst, columns=cluster_data1.columns).round(decimals=2)
-cluster1 = pd.DataFrame(cluster1lst, columns=cluster_data1.columns).round(decimals=2)
-cluster2 = pd.DataFrame(cluster2lst, columns=cluster_data1.columns).round(decimals=2)
-cluster3 = pd.DataFrame(cluster3lst, columns=cluster_data1.columns).round(decimals=2)
-cluster4 = pd.DataFrame(cluster4lst, columns=cluster_data1.columns).round(decimals=2)
-cluster5 = pd.DataFrame(cluster5lst, columns=cluster_data1.columns).round(decimals=2)
-cluster6 = pd.DataFrame(cluster6lst, columns=cluster_data1.columns).round(decimals=2)
-cluster7 = pd.DataFrame(cluster7lst, columns=cluster_data1.columns).round(decimals=2)
-
-# Sorting based on Crash count
-cluster0 = cluster0.sort_values(by=['SEVERITY'], ascending=True)
-cluster1 = cluster1.sort_values(by=['SEVERITY'], ascending=True)
-cluster2 = cluster2.sort_values(by=['SEVERITY'], ascending=True)
-cluster3 = cluster3.sort_values(by=['SEVERITY'], ascending=True)
-cluster4 = cluster4.sort_values(by=['MAX_AGE'], ascending=False)
-cluster5 = cluster5.sort_values(by=['MAX_AGE'], ascending=False)
-cluster6 = cluster6.sort_values(by=['MAX_AGE'], ascending=False)
-cluster7 = cluster7.sort_values(by=['MAX_AGE'], ascending=False)
-
-
-# Putting top 10 results into CSVs
-numValues = 10
-cluster0.to_csv("cluster0.csv", index=False)
-cluster1.to_csv("cluster1.csv", index=False)
-cluster2.to_csv("cluster2.csv", index=False)
-cluster3.to_csv("cluster3.csv", index=False)
-cluster4.to_csv("cluster4.csv", index=False)
-cluster5.to_csv("cluster5.csv", index=False)
-cluster6.to_csv("cluster6.csv", index=False)
-cluster7.to_csv("cluster7.csv", index=False)
+"""

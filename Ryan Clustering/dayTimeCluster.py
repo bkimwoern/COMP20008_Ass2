@@ -7,36 +7,50 @@ from sklearn.cluster import KMeans
 # Importing data
 accident_data = pd.read_csv('../datasets/accident.csv')
 
-# Format time
-accident_data['ACCIDENT_TIME'] = pd.to_datetime(accident_data['ACCIDENT_TIME'], format='%H:%M:%S')
+# Creating a Variable to count dates
+accident_data['ACCIDENT_DATE'] = pd.to_datetime(accident_data['ACCIDENT_DATE'], format='%d/%m/%Y')
+accident_data['day_of_year'] = accident_data['ACCIDENT_DATE'].dt.dayofyear
 
 # Drop data with invalid weekday code
 accident_data = accident_data[accident_data['DAY_OF_WEEK'] != 0]
 
-# Number time by hour
-accident_data['hour'] = accident_data['ACCIDENT_TIME'].dt.hour
+
+# weighted based on weekends and weekdays and then colour
 
 # Counting number of each day
 days_counts = accident_data['DAY_OF_WEEK'].value_counts().sort_index()
 
 # Creating weights for each day (10000 is added so the number isn't tiny)
 days_weights = 10000 / days_counts
-
-# counting number of each hour
-hour_counts = accident_data['hour'].value_counts().sort_index()
-
-# Creating weights for each hour (10000 is added so the number isn't tiny)
-hour_weights = 10000 / hour_counts
+print(days_weights)
 
 # Applying weights to people killed
-accident_data['weighted_ppl_killed'] = accident_data['NO_PERSONS_KILLED'] * accident_data['DAY_OF_WEEK'].map(days_weights)
-accident_data['weighted_ppl_killed'] = accident_data['weighted_ppl_killed'] * accident_data['hour'].map(hour_weights)
+accident_data['weighted_ppl_killed'] = accident_data['NO_PERSONS_KILLED']# * accident_data['DAY_OF_WEEK'].map(days_weights)
+
 
 # Drop values with no deaths
 accident_data = accident_data[accident_data['SEVERITY'] == 1]
 
-# Group by hour and day of the week and count sum of deaths
-time_data = accident_data.groupby(['hour','DAY_OF_WEEK'])['weighted_ppl_killed'].sum().reset_index()
+final_Data = accident_data.groupby(['day_of_year'])['weighted_ppl_killed'].sum().reset_index()
+
+colormap = {1: 'red', 7: 'red', 2: 'blue', 3: 'blue', 4: 'blue', 5: 'blue', 6: 'red'}
+
+pt.figure(figsize=(10, 10))
+pt.scatter(final_Data['day_of_year'], final_Data['weighted_ppl_killed'])
+pt.title('Day of the year Vs Weighted deaths')
+pt.xlabel('Day of the year')
+pt.ylabel('Weighted deaths')
+pt.savefig('Day vs Deaths.png')
+
+accident_data[['ACCIDENT_DATE', 'day_of_year', 'weighted_ppl_killed']].sort_values(by=['weighted_ppl_killed'], ascending=False).to_csv('test.csv', index=False)
+
+
+
+assert(1 == 2)
+
+# Group by  day of the week and count sum of deaths
+time_data = accident_data.groupby(['DAY_OF_WEEK'])['weighted_ppl_killed'].sum().reset_index()
+print("ryan1")
 
 # Copy data to normalise
 normalisedTime_data = time_data.copy(deep=True)
@@ -46,17 +60,15 @@ normalisedTime_data = time_data.copy(deep=True)
 clustering will use. This will ensure time can be clustered properly"""
 normalisedTime_data['day_sin'] = np.sin(2 * np.pi * time_data['DAY_OF_WEEK'] / 7)
 normalisedTime_data['day_cos'] = np.cos(2 * np.pi * time_data['DAY_OF_WEEK'] / 7)
-normalisedTime_data['hour_sin'] = np.sin(2 * np.pi * time_data['hour'] / 24)
-normalisedTime_data['hour_cos'] = np.cos(2 * np.pi * time_data['hour'] / 24)
 
 # Dropping non adjusted columns
 normalisedTime_data = normalisedTime_data.drop(columns=['DAY_OF_WEEK'])
-normalisedTime_data = normalisedTime_data.drop(columns=['hour'])
 
 # Normalise weighted deaths to be between -1 and 1
 normalisedTime_data['weighted_ppl_killed'] = 2 * ((normalisedTime_data['weighted_ppl_killed'] - normalisedTime_data['weighted_ppl_killed'].min()) / (normalisedTime_data['weighted_ppl_killed'].max() - normalisedTime_data['weighted_ppl_killed'].min())) -1
+normalisedTime_data.to_csv('normalisedTimeData.csv')
 
-
+print("ryan1")
 
 # Using elbow method to find best k value: The following code is from week 6 workshop
 distortions = []
@@ -68,34 +80,29 @@ for k in k_range:
 
 # Plotting and saving figure
 pt.plot(k_range, distortions, 'bx-')
-pt.title('Day, Hour and number of people killed clustering')
+pt.title('Day and number of people killed clustering')
 pt.xlabel('k Values')
 pt.ylabel('Distortion')
-pt.savefig('DayTimeClusteringElbow.png')
+pt.savefig('DayClusteringElbow.png')
+print("ryan1")
 
 # K value of 7 or 8 was found to be useful
-clusters = KMeans(n_clusters=7)
+clusters = KMeans(n_clusters=4)
 clusters.fit(normalisedTime_data)
 
 colormap = {0: 'red', 1: 'green', 2: 'blue', 3: 'darkviolet', 4: 'orange', 5: 'cadetblue', 6: 'orchid', 7: 'lime'}
 
 # Plotting and saving figure
-fig = pt.figure(figsize=(7, 7))
-ax = pt.axes(projection="3d")
-ax.scatter(time_data['hour'],
-           time_data['DAY_OF_WEEK'],
-           time_data['weighted_ppl_killed'],
-           c=[colormap.get(x) for x in clusters.labels_])
+pt.figure(figsize=(7, 7))
+pt.scatter(time_data['DAY_OF_WEEK'], time_data['weighted_ppl_killed'],
+           c=[colormap.get(x) for x in clusters.labels_], alpha=0.4)
+pt.xlabel('Day (1-7) 1 = Sunday')
+pt.ylabel('Weighted People Killed')
+pt.title('Clustering based on number of people killed and day of the week')
+pt.savefig('dayCluster.png')
 
-ax.set_ylabel('Day of the Week')
-ax.set_xlabel('Hour')
-ax.set_zlabel('Weighted people killed')
-ax.set_title(f"k = {len(set(clusters.labels_))}")
-
-pt.savefig('DayTimeClustering.png')
-
-# Putting top 10 rows within a cluser into its own csv file for output
-# Using lists whcih will be converted to dataFrames later (more efficent to use lists when appending rows repeatdly)
+# Putting top 10 rows within a cluster into its own csv file for output
+# Using lists which will be converted to dataFrames later (more efficient to use lists when appending rows repeatedly)
 cluster0lst = []
 cluster1lst = []
 cluster2lst = []
@@ -139,14 +146,14 @@ cluster6 = pd.DataFrame(cluster6lst, columns=time_data.columns).round(decimals=2
 cluster7 = pd.DataFrame(cluster7lst, columns=time_data.columns).round(decimals=2)
 
 # Sorting based on Crash count
-cluster0 = cluster0.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster1 = cluster1.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster2 = cluster2.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster3 = cluster3.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster4 = cluster4.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster5 = cluster5.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster6 = cluster6.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster7 = cluster7.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
+cluster0 = cluster0.sort_values(by=['DAY_OF_WEEK'], ascending=False)
+cluster1 = cluster1.sort_values(by=['DAY_OF_WEEK'], ascending=False)
+cluster2 = cluster2.sort_values(by=['DAY_OF_WEEK'], ascending=False)
+cluster3 = cluster3.sort_values(by=['DAY_OF_WEEK'], ascending=False)
+cluster4 = cluster4.sort_values(by=['DAY_OF_WEEK'], ascending=False)
+cluster5 = cluster5.sort_values(by=['DAY_OF_WEEK'], ascending=False)
+cluster6 = cluster6.sort_values(by=['DAY_OF_WEEK'], ascending=False)
+cluster7 = cluster7.sort_values(by=['DAY_OF_WEEK'], ascending=False)
 
 
 # Putting top 10 results into CSVs
