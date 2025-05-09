@@ -98,11 +98,19 @@ def imputing_safety_equipment(filtered_person):
         else 1 if x in [2, 4, 5, 7, 8] # Did not wear safety equipment
         else 2 # Unknown
     )
+
+    print('Before')
+    print(filtered_person['UNPROTECTED'].value_counts())
+    print(filtered_person['HELMET_BELT_WORN'].value_counts())
     # -- Randomly imputing unknown safety equipment usage IN an enclosed vehicle
     random_imputation(filtered_person, 1)
 
     # --- Randomly imputing unknown safety equipment usage NOT in an enclosed vehicle
     random_imputation(filtered_person, 0)
+
+    print('After')
+    print(filtered_person['UNPROTECTED'].value_counts())
+    print(filtered_person['HELMET_BELT_WORN'].value_counts())
 
 def random_imputation(filtered_person, is_encased):
     # Cleaning empty or string-based missing entries
@@ -117,22 +125,28 @@ def random_imputation(filtered_person, is_encased):
                                        'IN_METAL_BOX', is_encased)
 
     # --- Using weighted random imputation to impute 1 or 0 in 'UNPROTECTED', where use of safety equipment is unknown ---
-    num_safety_worn = safety_worn['HELMET_BELT_WORN'].shape[0]
-    num_safety_not_worn = safety_not_worn['HELMET_BELT_WORN'].shape[0]
+    #   Calculating number of instances for safety equipment worn/ not worn for 'is_encased'
+    num_safety_worn = safety_worn['UNPROTECTED'].shape[0]
+    num_safety_not_worn = safety_not_worn['UNPROTECTED'].shape[0]
     num_total = num_safety_worn + num_safety_not_worn
 
-    #   Finding probabilities of person wearing/ not wearing safety equipment within an encased vehicle
+    #   Finding probabilities of person wearing/ not wearing safety equipment within 'is_encased' vehicle
     probability_0 = num_safety_worn / num_total
     probability_1 = num_safety_not_worn / num_total
 
+    #print(filtered_person['HELMET_BELT_WORN'].value_counts())
     # Randomly assign worn (1), not worn (0)
     imputed_values = np.random.choice([1, 0], size=mask.sum(), p=[probability_0, probability_1])
-    filtered_person.loc[mask, 'HELMET_BELT_WORN'] = imputed_values
+    #filtered_person.loc[mask, 'HELMET_BELT_WORN'] = imputed_values
+    filtered_person.loc[mask, 'UNPROTECTED'] = imputed_values
 
+    #print(filtered_person['HELMET_BELT_WORN'].value_counts())
     # Recalculate UNPROTECTED after imputation
+    """
     filtered_person['UNPROTECTED'] = filtered_person['HELMET_BELT_WORN'].apply(
         lambda x: 0 if x in [1, 3, 6] else 1 if pd.notna(x) else 2
     )
+    """
 
 
 
