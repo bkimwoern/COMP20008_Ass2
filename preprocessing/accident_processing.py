@@ -1,12 +1,12 @@
 import pandas as pd
 
-
 def process_accident_csv():
     filtered_accident = pd.read_csv('datasets/accident.csv')
 
     # --- Normalising date values in filtered_accident_csv ---
-    filtered_accident['ACCIDENT_DATE'] = pd.to_datetime(filtered_accident['ACCIDENT_DATE'], dayfirst=True, errors='coerce')
-
+    filtered_accident['ACCIDENT_DATE'] = pd.to_datetime(filtered_accident['ACCIDENT_DATE'],
+                                                        dayfirst=True,
+                                                        errors='coerce')
     # --- Preprocessing accident_csv ---
     #   Adding a public holiday boolean column to filtered_accident csv
     public_holiday_column(filtered_accident)
@@ -19,6 +19,11 @@ def process_accident_csv():
 
     #   REMANDER 2 VALUES USE PROPORTIONAL RANDOM IMPUTATION TO IMPUTE
     filtered_accident.to_csv('datasets/filtered_accident.csv', index=False)
+
+    # Creating version without nan values
+    filtered_accident_no_nan = filtered_accident
+    filtered_accident_no_nan.dropna()
+    filtered_accident_no_nan.tocsv('datasets/filtered_accident_no_nan.csv', index=False)
 
 def public_holiday_column(filtered_accident):
     # --- Normalising values in public_holiday_csv

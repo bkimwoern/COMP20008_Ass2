@@ -21,6 +21,10 @@ def process_person_csv():
 
     filtered_person.to_csv('datasets/filtered_person.csv', index=False)
 
+    filtered_person_no_nan = filtered_person
+    filtered_person_no_nan.dropna()
+    filtered_person_no_nan.tocsv('datasets/filtered_person_no_nan.csv', index=False)
+
 def in_metal_box(filtered_person):
     filtered_vehicle_csv = pd.read_csv('datasets/filtered_vehicle_new.csv')
 
@@ -63,7 +67,6 @@ def in_metal_box(filtered_person):
     randomly_imputing_in_metal_box(filtered_person)
 
 def randomly_imputing_in_metal_box(filtered_person):
-    unknown = filter_out_value(filtered_person, 'IN_METAL_BOX', 2)
     is_in_metal_box = filter_out_value(filtered_person, 'IN_METAL_BOX', 1)
     not_in_metal_box = filter_out_value(filtered_person, 'IN_METAL_BOX', 0)
 
@@ -84,14 +87,6 @@ def randomly_imputing_in_metal_box(filtered_person):
 
     # Apply imputed values only to unknown rows
     filtered_person.loc[unknown_mask, 'IN_METAL_BOX'] = imputed_values
-
-    """
-    unknown['IN_METAL_BOX'] = unknown['IN_METAL_BOX'].apply(
-        lambda x: np.random.choice([0,1], p=[probability_ex, probability_en] if x == 2 else x)
-    )
-
-    filtered_person.loc[unknown.index, 'IN_METAL_BOX'] = unknown['IN_METAL_BOX']
-    """
 
 def imputing_safety_equipment(filtered_person):
     filtered_person['HELMET_BELT_WORN'] = filtered_person['HELMET_BELT_WORN'].replace(['', ' ', 'nan'], pd.NA)

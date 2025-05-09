@@ -11,6 +11,10 @@ def process_vehicle_csv():
 
     filtered_vehicle_csv.to_csv('datasets/filtered_vehicle_new.csv', index=False)
 
+    filtered_vehicle_no_nan = filtered_vehicle_csv
+    filtered_vehicle_no_nan.dropna()
+    filtered_vehicle_no_nan.tocsv('datasets/filtered_vehicle_no_nan.csv', index=False)
+
 def process_vehicle_body_type(filtered_vehicle):
     vehicle_body_map = {
         'OF SHD': 'OF/SHD',
@@ -46,7 +50,6 @@ def process_vehicle_type(filtered_vehicle_csv):
         .fillna(filtered_vehicle_csv.loc[body_mask, 'VEHICLE_TYPE_DESC'])
     )
 
-    # numbers (vehicle_Type) not being updated correctly
     type_mask = filtered_vehicle_csv['VEHICLE_TYPE'] == 18
     filtered_vehicle_csv.loc[type_mask, 'VEHICLE_TYPE'] = (
         filtered_vehicle_csv.loc[type_mask, 'VEHICLE_TYPE_DESC']
