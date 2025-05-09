@@ -4,9 +4,11 @@ def process_accident_csv():
     filtered_accident = pd.read_csv('datasets/accident.csv')
 
     # --- Normalising date values in filtered_accident_csv ---
+    """
     filtered_accident['ACCIDENT_DATE'] = pd.to_datetime(filtered_accident['ACCIDENT_DATE'],
                                                         dayfirst=True,
-                                                        errors='coerce')
+                                                     errors='coerce')
+    """
     # --- Preprocessing accident_csv ---
     #   Adding a public holiday boolean column to filtered_accident csv
     public_holiday_column(filtered_accident)
