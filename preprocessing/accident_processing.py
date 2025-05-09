@@ -5,7 +5,7 @@ def process_accident_csv():
     filtered_accident = pd.read_csv('datasets/accident.csv')
 
     # --- Normalising date values in filtered_accident_csv ---
-    filtered_accident['ACCIDENT_DATE'] = pd.to_datetime(filtered_accident['ACCIDENT_DATE'], format='%d/%m/%Y')
+    filtered_accident['ACCIDENT_DATE'] = pd.to_datetime(filtered_accident['ACCIDENT_DATE'], dayfirst=True, errors='coerce')
 
     # --- Preprocessing accident_csv ---
     #   Adding a public holiday boolean column to filtered_accident csv
@@ -26,16 +26,17 @@ def public_holiday_column(filtered_accident):
     public_holiday_csv['Date'] = pd.to_datetime(public_holiday_csv['Date'], format='%d/%m/%Y')
     public_holiday_csv['National_holiday'] = public_holiday_csv['National_holiday'].astype(bool)
 
-    # --- Extracting dates from accident_csv that fall on national holidays ---
-    national_holiday = public_holiday_csv.loc[public_holiday_csv['National_holiday'] == True, 'Date']
+    # --- Extracting dates from accident_csv that fall on national holidays or public holidays in Melbourne ---
+    holiday_dates = public_holiday_csv.loc[
+        (public_holiday_csv['National_holiday'] == True) | (public_holiday_csv['Melbourne'] == 1),
+        'Date'
+    ]
 
     # --- Creating a new column in filtered_accident called PUBLIC_HOLIDAY
     #   Initialising everything to false
     filtered_accident['PUBLIC_HOLIDAY'] = 0
     #   Dates that fall on national holidays are set to 1
-    filtered_accident.loc[filtered_accident['ACCIDENT_DATE'].isin(national_holiday), 'PUBLIC_HOLIDAY'] = 1
-
-    # Possibly include regional holidays???
+    filtered_accident.loc[filtered_accident['ACCIDENT_DATE'].isin(holiday_dates), 'PUBLIC_HOLIDAY'] = 1
 
 def night_day_column(filtered_accident):
     # --- Creating new column 'DAY'- 0 if night, 1 if day ---
@@ -59,12 +60,9 @@ def day_of_week(filtered_accident):
     #   Computing the expected DAY_OF_WEEK values from the description
     expected = filtered_accident['DAY_WEEK_DESC'].map(day_of_week_map)
 
-    #   Helper print statements to see incorrect rows
-    #mismatched = filtered_accident[filtered_accident['DAY_OF_WEEK'] != expected]
-    #print("Bad rows:\n", mismatched[['ACCIDENT_NO', 'DAY_OF_WEEK', 'DAY_WEEK_DESC']])
-
     #   Correcting only the mismatched rows within the dataset
     filtered_accident.loc[filtered_accident['DAY_OF_WEEK'] != expected, 'DAY_OF_WEEK'] = expected
 
 def at_intersection(filtered_accident):
-    filtered_accident['AT_INTERSECTION'] = filtered_accident['ROAD_GEOMETRY'].apply(lambda x: 1 if x in [1,2,3,4] else 0)
+    filtered_accident['AT_INTERSECTION'] = (filtered_accident['ROAD_GEOMETRY']
+                                            .apply(lambda x: 1 if x in [1,2,3,4] else 0))

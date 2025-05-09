@@ -1,6 +1,3 @@
-import pandas as pd
-
-import pandas as pd
 from .vehicle_processing import process_vehicle_csv, process_vehicle_body_type
 from .person_processing import process_person_csv
 from .accident_processing import process_accident_csv

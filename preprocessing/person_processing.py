@@ -22,48 +22,104 @@ def process_person_csv():
     filtered_person.to_csv('datasets/filtered_person.csv', index=False)
 
 def in_metal_box(filtered_person):
-    filtered_vehicle_csv = pd.read_csv('datasets/filtered_vehicle.csv')
+    filtered_vehicle_csv = pd.read_csv('datasets/filtered_vehicle_new.csv')
 
-    enclosed_vehicle = ['Bus/Coach', ]
+    encased_vehicle = {1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 16, 19, 27, 60, 61, 62, 63, 71, 72}
+    exposed_vehicle = {10, 11, 12, 13, 14, 20}
 
-    #   Defaulting all values to 0 (is not in enclosed vehicle)
-    #   Join person_csv with filtered_vehicle, which has description of type of vehicle, then base it off that!!!
-    filtered_person['IN_METAL_BOX'] = 0
+    def classify_box(vehicle_type):
+        if vehicle_type in encased_vehicle:
+            return 1
+        elif vehicle_type in exposed_vehicle:
+            return 0
+        else:
+            return 2
 
+    merged = pd.merge(
+        filtered_person,
+        filtered_vehicle_csv[['ACCIDENT_NO', 'VEHICLE_ID', 'VEHICLE_TYPE']],
+        on=['ACCIDENT_NO', 'VEHICLE_ID'],
+        how='left'
+    )
 
-    filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isin(['Drivers', 'Passengers']), 'IN_METAL_BOX'] = 1
-    filtered_person.loc[filtered_person['ROAD_USER_TYPE_DESC'].isna(), 'IN_METAL_BOX'] = np.nan
+    merged['IN_METAL_BOX'] = merged['VEHICLE_TYPE'].apply(classify_box)
+    filtered_person['IN_METAL_BOX'] = merged['IN_METAL_BOX']
 
+    filtered_person.loc[
+        (filtered_person['IN_METAL_BOX'] == 2) &
+        (filtered_person['ROAD_USER_TYPE_DESC'] == 'Passengers'),
+        'IN_METAL_BOX'
+    ] = 1
+
+    filtered_person.loc[
+        (filtered_person['IN_METAL_BOX'] == 2) &
+        (filtered_person['ROAD_USER_TYPE_DESC'].isin([
+            'Bicyclists', 'E-scooter Rider', 'Pedestrians', 'Motorcyclists', 'Pillion Passengers'
+        ])),
+        'IN_METAL_BOX'
+    ] = 0
+
+    # NOW FOR THE REMAINING 2'S IN IN_METAL_BOX, DO PROPORTIONAL IMPUTATION
+    randomly_imputing_in_metal_box(filtered_person)
+
+def randomly_imputing_in_metal_box(filtered_person):
+    unknown = filter_out_value(filtered_person, 'IN_METAL_BOX', 2)
+    is_in_metal_box = filter_out_value(filtered_person, 'IN_METAL_BOX', 1)
+    not_in_metal_box = filter_out_value(filtered_person, 'IN_METAL_BOX', 0)
+
+    num_encased = is_in_metal_box.shape[0]
+    num_exposed = not_in_metal_box.shape[0]
+    num_total = num_encased + num_exposed
+
+    probability_ex = num_exposed / num_total
+    probability_en = num_encased / num_total
+
+    unknown_mask = filtered_person['IN_METAL_BOX'] == 2
+
+    imputed_values = np.random.choice(
+        [0, 1],
+        size=unknown_mask.sum(),
+        p=[probability_ex, probability_en]
+    )
+
+    # Apply imputed values only to unknown rows
+    filtered_person.loc[unknown_mask, 'IN_METAL_BOX'] = imputed_values
+
+    """
+    unknown['IN_METAL_BOX'] = unknown['IN_METAL_BOX'].apply(
+        lambda x: np.random.choice([0,1], p=[probability_ex, probability_en] if x == 2 else x)
+    )
+
+    filtered_person.loc[unknown.index, 'IN_METAL_BOX'] = unknown['IN_METAL_BOX']
+    """
 
 def imputing_safety_equipment(filtered_person):
+    filtered_person['HELMET_BELT_WORN'] = filtered_person['HELMET_BELT_WORN'].replace(['', ' ', 'nan'], pd.NA)
+    filtered_person['HELMET_BELT_WORN'] = pd.to_numeric(filtered_person['HELMET_BELT_WORN'], errors='coerce')
+
     # --- Creating a new column 'UNPROTECTED'- 1 if no safety equipment was worn, 0 if worn ---
     filtered_person['UNPROTECTED'] = filtered_person['HELMET_BELT_WORN'].apply(
         lambda x: 0 if x in [1, 3, 6] # Wore safety equipment
         else 1 if x in [2, 4, 5, 7, 8] # Did not wear safety equipment
         else 2 # Unknown
     )
-
     # -- Randomly imputing unknown safety equipment usage IN an enclosed vehicle
     random_imputation(filtered_person, 1)
 
     # --- Randomly imputing unknown safety equipment usage NOT in an enclosed vehicle
     random_imputation(filtered_person, 0)
 
-    metal = filter_out_value(filtered_person, 'IN_METAL_BOX', 1)
-    print(filter_out_value(metal, 'UNPROTECTED', 2))
-
 def random_imputation(filtered_person, is_encased):
-    print('Before')
-    print(filtered_person['UNPROTECTED'].value_counts())
+    # Cleaning empty or string-based missing entries
+    filtered_person['HELMET_BELT_WORN'] = filtered_person['HELMET_BELT_WORN'].replace(['', ' ', 'nan'], pd.NA)
+    filtered_person['HELMET_BELT_WORN'] = pd.to_numeric(filtered_person['HELMET_BELT_WORN'], errors='coerce')
 
-    # --- Extracting records of unknown safety equipment usage IN an encased vehicle ---
-    unknown = filter_out_value(filter_out_value(filtered_person, 'HELMET_BELT_WORN', 9.0),
-                                       'IN_METAL_BOX', is_encased)
-
+    # Mask for rows needing random imputation
+    mask = (filtered_person['UNPROTECTED'] == 2) & (filtered_person['IN_METAL_BOX'] == 1)
     safety_worn = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 0),
-                                           'IN_METAL_BOX', is_encased)
+                                   'IN_METAL_BOX', is_encased)
     safety_not_worn = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 1),
-                                               'IN_METAL_BOX', is_encased)
+                                       'IN_METAL_BOX', is_encased)
 
     # --- Using weighted random imputation to impute 1 or 0 in 'UNPROTECTED', where use of safety equipment is unknown ---
     num_safety_worn = safety_worn['HELMET_BELT_WORN'].shape[0]
@@ -74,13 +130,15 @@ def random_imputation(filtered_person, is_encased):
     probability_0 = num_safety_worn / num_total
     probability_1 = num_safety_not_worn / num_total
 
-    #   Applying weighted random imputation to the 'UNPROTECTED' column where value is 2 (unknown if safety
-    #   equipment was used)
-    unknown['UNPROTECTED'] = unknown['UNPROTECTED'].apply(
-        lambda x: np.random.choice([0, 1], p=[probability_0, probability_1]) if x == 2 else x
-    )
-    #   Assigning these imputed values back to filtered_person
-    filtered_person.loc[unknown.index, 'UNPROTECTED'] = unknown['UNPROTECTED']
+    # Randomly assign worn (1), not worn (0)
+    imputed_values = np.random.choice([1, 0], size=mask.sum(), p=[probability_0, probability_1])
+    filtered_person.loc[mask, 'HELMET_BELT_WORN'] = imputed_values
 
-    print('After imputing IN_METAL_BOX =', is_encased)
-    print(filtered_person['UNPROTECTED'].value_counts())
+    # Recalculate UNPROTECTED after imputation
+    filtered_person['UNPROTECTED'] = filtered_person['HELMET_BELT_WORN'].apply(
+        lambda x: 0 if x in [1, 3, 6] else 1 if pd.notna(x) else 2
+    )
+
+
+
+
