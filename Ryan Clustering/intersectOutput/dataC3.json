@@ -1,0 +1,26 @@
+{
+    "SPEED_ZONE": {
+        "mean": 91.16504854368932,
+        "median": 100.0,
+        "std_dev": 18.219843248168093,
+        "min": 40.0,
+        "max": 110.0,
+        "count": 103.0
+    },
+    "ACCIDENT_TYPE": {
+        "mean": 6.0,
+        "median": 6.0,
+        "std_dev": 0.0,
+        "min": 6.0,
+        "max": 6.0,
+        "count": 103.0
+    },
+    "severity_index": {
+        "mean": 5.242718446601942,
+        "median": 3.0,
+        "std_dev": 6.808970466385309,
+        "min": 3.0,
+        "max": 54.0,
+        "count": 103.0
+    }
+}

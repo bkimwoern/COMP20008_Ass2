@@ -14,23 +14,6 @@ import pandas as pd
 from sklearn.cluster import KMeans
 import json
 
-"""
-Function takes in age interval and returns the upperbound of the interval.
-If a value is unable to be turned into an integer the function returns 0
-"""
-def maxage(age_interval):
-    if pd.isna(age_interval):
-        return 0
-
-    try:
-        if '-' in age_interval:
-            return int(age_interval.split('-')[1])
-        elif '+' in age_interval:
-            return int(age_interval.replace('+', ''))
-        else:
-            return int(age_interval)  # fallback in case it's just a number
-    except (ValueError, TypeError, AttributeError):
-        return 0
 
 """
 Function takes in clusters, and sorting features. It out puts each cluster to its own CSV and also output one 
@@ -48,7 +31,7 @@ def outputClusters(clustersLabels, sortFeatures, ascending, clusters_data):
     i = 0
     for cluster in clusters:
         dfCluster = pd.DataFrame(cluster, columns=clusters_data.columns).round(decimals=2).sort_values(by=sortFeatures, ascending=ascending)
-        dfCluster.to_csv('hazardOutput/cluster' + str(i) + '.csv', index=False)
+        dfCluster.to_csv('intersectOutput/cluster' + str(i) + '.csv', index=False)
 
 
         stats = {}
@@ -64,7 +47,7 @@ def outputClusters(clustersLabels, sortFeatures, ascending, clusters_data):
             }
 
         # Save to JSON file
-        with open('hazardOutput/dataC' + str(i) + '.json', 'w') as f:
+        with open('intersectOutput/dataC' + str(i) + '.json', 'w') as f:
             json.dump(stats, f, indent=4)
 
         i = i + 1
@@ -88,35 +71,29 @@ accident_data = accident_data[accident_data['SEVERITY'] == 1]
 accident_data['severity_index'] = accident_data['NO_PERSONS_KILLED'] * killMulti + accident_data['NO_PERSONS_INJ_2'] * injurySeries + accident_data['NO_PERSONS_INJ_3'] * injury
 
 
+# one hot encoding ACCIDENT_TYPE
+dummies = pd.get_dummies(accident_data['ACCIDENT_TYPE'], prefix='ACCIDENT_TYPE', dtype=int)
+accident_data = pd.concat([accident_data, dummies], axis=1)
+#accident_data = pd.get_dummies(accident_data, columns=['ACCIDENT_TYPE'], dtype=int)
+accident_data.to_csv('test.csv', index=False)
 
-# Only looking at drivers and passangers risk assesment
-person_data = person_data[~person_data['ROAD_USER_TYPE'].isin([1,6,9])]
-
-# Removing values where the age group is unknown
-person_data = person_data[person_data['AGE_GROUP'] != 'Unknown']
-
-
-# Cleaning sex and assigning number, 1 if a man and 0 if a female
-person_data = person_data[person_data['SEX'].isin(['M', 'F'])]
-person_data['SEX'] = person_data['SEX'].apply(lambda x: 1 if x == 'M' else 0)
-
-# Take the max possible age of person, and clean
-person_data['MAX_AGE'] = person_data['AGE_GROUP'].apply(maxage)
-person_data = person_data[person_data['MAX_AGE'] != 0]
-
-# Merge accident and person data by accident number
-crash_data = pd.merge(accident_data, person_data, how='inner', on='ACCIDENT_NO')
 
 seed = 1
-cluster_data2 = crash_data.groupby('UNPROTECTED', group_keys=False).sample(n=crash_data['UNPROTECTED'].value_counts().min(), random_state=seed)
+
 
 # Filter down to attributes we want to cluster on
-cluster_data = cluster_data2[['SPEED_ZONE', 'UNPROTECTED']]
-# ['SPEED_ZONE', 'RESTRAINT_WORN'] with k = 3
-# ['SPEED_ZONE', 'MAX_AGE', 'RESTRAINT_WORN'] with k = 3,4
-# ['SPEED_ZONE', 'MAX_AGE']
+cluster_data = accident_data[['SPEED_ZONE',
+                               'ACCIDENT_TYPE_1',
+                               'ACCIDENT_TYPE_2',
+                               'ACCIDENT_TYPE_3',
+                               'ACCIDENT_TYPE_4',
+                               'ACCIDENT_TYPE_5',
+                               'ACCIDENT_TYPE_6',
+                               'ACCIDENT_TYPE_7',
+                               'ACCIDENT_TYPE_8',
+                               'ACCIDENT_TYPE_9',]]
 
-# ['SPEED_ZONE', 'MAX_AGE', 'RESTRAINT_WORN'] k =3 when looking at SEVERITY ==1
+print(cluster_data.size)
 
 # Copy data to normalise
 normalised_data = cluster_data.copy(deep=True)
@@ -136,11 +113,11 @@ pt.plot(k_range, distortions, 'bx-')
 pt.title('Day, Hour and number of people killed clustering')
 pt.xlabel('k Values')
 pt.ylabel('Distortion')
-pt.savefig('ageHazardElbow.png')
+pt.savefig('intersectElbow.png')
 
 print(normalised_data)
 
-clusters = KMeans(n_clusters=3, random_state=seed)
+clusters = KMeans(n_clusters=4, random_state=seed)
 clusters.fit(normalised_data)
 
 colormap = {0: 'red', 1: 'green', 2: 'blue', 3: 'orange', 4: 'cadetblue', 5: 'orchid', 6: 'lime'}
@@ -149,23 +126,23 @@ colormap = {0: 'red', 1: 'green', 2: 'blue', 3: 'orange', 4: 'cadetblue', 5: 'or
 # Plotting and saving figure, 3 dimensional
 fig = pt.figure(figsize=(7, 7))
 ax = pt.axes(projection="3d")
-ax.scatter(cluster_data2['MAX_AGE'],
-           cluster_data2['SPEED_ZONE'],
-           cluster_data2['severity_index'],
+ax.scatter(accident_data['ACCIDENT_TYPE'],
+           accident_data['SPEED_ZONE'],
+           accident_data['severity_index'],
            c=[colormap.get(x) for x in clusters.labels_], alpha=0.2)
 
 
-ax.set_xlabel('Age')
+ax.set_xlabel('Accident Type')
 ax.set_ylabel('Speed Zone')
 ax.set_zlabel('Severity Index')
 ax.set_title(f"Clusters on Speed Zone and Protection worn; k = {len(set(clusters.labels_))}")
 
-pt.savefig('hardardCluster.png')
+pt.savefig('intersectionCluster.png')
 
 
 # Outputting clusters to individual CSV files
-crash_data = cluster_data2[['UNPROTECTED', 'SPEED_ZONE', 'MAX_AGE', 'SEX', 'LIGHT_CONDITION', 'severity_index', 'SEVERITY']]
-outputClusters(clusters.labels_, ['MAX_AGE'], True, crash_data)
+crash_data = accident_data[['SPEED_ZONE', 'ACCIDENT_TYPE', 'severity_index']]
+outputClusters(clusters.labels_, ['SPEED_ZONE'], True, crash_data)
 
 
 # To do:
