@@ -62,6 +62,7 @@ def fatality_model_dt():
     # one hot encoding ACCIDENT_TYPE
     accident_df = pd.get_dummies(accident_df, columns=['ACCIDENT_TYPE'], drop_first=False)
 
+    # one hot encoding ROAD_GEOMETRY
     accident_df = pd.get_dummies(accident_df, columns=['ROAD_GEOMETRY'], drop_first=False)
 
     pd.set_option('display.max_rows', None)
