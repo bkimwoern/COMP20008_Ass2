@@ -9,11 +9,11 @@ def process_vehicle_csv():
     process_vehicle_body_type(filtered_vehicle_csv)
     process_vehicle_type(filtered_vehicle_csv)
 
-    filtered_vehicle_csv.to_csv('datasets/filtered_vehicle_new.csv', index=False)
-
     filtered_vehicle_no_nan = filtered_vehicle_csv
     filtered_vehicle_no_nan.dropna()
-    filtered_vehicle_no_nan.tocsv('datasets/filtered_vehicle_no_nan.csv', index=False)
+
+    filtered_vehicle_csv.to_csv('datasets/filtered_vehicle_new.csv', index=False)
+    filtered_vehicle_no_nan.to_csv('datasets/filtered_vehicle_no_nan.csv', index=False)
 
 def process_vehicle_body_type(filtered_vehicle):
     vehicle_body_map = {

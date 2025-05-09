@@ -19,11 +19,11 @@ def process_person_csv():
     # --- Imputing not known values in 'HELMET_BELT_WORN' column ---
     imputing_safety_equipment(filtered_person)
 
-    filtered_person.to_csv('datasets/filtered_person.csv', index=False)
-
     filtered_person_no_nan = filtered_person
     filtered_person_no_nan.dropna()
-    filtered_person_no_nan.tocsv('datasets/filtered_person_no_nan.csv', index=False)
+
+    filtered_person.to_csv('datasets/filtered_person.csv', index=False)
+    filtered_person_no_nan.to_csv('datasets/filtered_person_no_nan.csv', index=False)
 
 def in_metal_box(filtered_person):
     filtered_vehicle_csv = pd.read_csv('datasets/filtered_vehicle_new.csv')
@@ -110,7 +110,7 @@ def random_imputation(filtered_person, is_encased):
     filtered_person['HELMET_BELT_WORN'] = pd.to_numeric(filtered_person['HELMET_BELT_WORN'], errors='coerce')
 
     # Mask for rows needing random imputation
-    mask = (filtered_person['UNPROTECTED'] == 2) & (filtered_person['IN_METAL_BOX'] == 1)
+    mask = (filtered_person['UNPROTECTED'] == 2) & (filtered_person['IN_METAL_BOX'] == is_encased)
     safety_worn = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 0),
                                    'IN_METAL_BOX', is_encased)
     safety_not_worn = filter_out_value(filter_out_value(filtered_person, 'UNPROTECTED', 1),

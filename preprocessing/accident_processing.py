@@ -17,13 +17,14 @@ def process_accident_csv():
     # Adding a column that indicates whether accident occurred at an intersection (1) or not (0)
     at_intersection(filtered_accident)
 
+    filtered_accident_no_nan = filtered_accident
+    filtered_accident_no_nan.dropna()
+
     #   REMANDER 2 VALUES USE PROPORTIONAL RANDOM IMPUTATION TO IMPUTE
     filtered_accident.to_csv('datasets/filtered_accident.csv', index=False)
 
     # Creating version without nan values
-    filtered_accident_no_nan = filtered_accident
-    filtered_accident_no_nan.dropna()
-    filtered_accident_no_nan.tocsv('datasets/filtered_accident_no_nan.csv', index=False)
+    filtered_accident_no_nan.to_csv('datasets/filtered_accident_no_nan.csv', index=False)
 
 def public_holiday_column(filtered_accident):
     # --- Normalising values in public_holiday_csv
