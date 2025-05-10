@@ -8,26 +8,27 @@ Solution: main file
 DO NOT CHANGE THIS FILE!
 """
 
-import os
 import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 
 def verify_preprocessing():
     try:
-        from preprocessing import preprocessing
+        from preprocessing import main_preprocessing
     except ImportError:
         print("Preprocessing's function not found.")
         return
 
     print("=" * 80)
     print("Executing preprocessing...\n")
-    preprocessing()
+    main_preprocessing.preprocessing()
 
     # print("Checking Task 1.1's output...\n")
     #print("Preprocessing has no expected output but executed without exceptions\n")
 
     print("Finished Preprocessing")
     print("=" * 80)
-
 
 def main():
     args = sys.argv

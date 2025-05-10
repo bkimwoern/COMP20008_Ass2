@@ -3,15 +3,52 @@ import matplotlib.pyplot as pt
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
+import json
+
+
+"""
+Function takes in clusters, and sorting features. It out puts each cluster to its own CSV and also output one 
+varible statiics on all columns for the cluster to a seperate JSON file.
+"""
+def outputClusters(clustersLabels, sortFeatures, ascending, clusters_data):
+    numClusters = len(set(clustersLabels)) # The number of clusters
+    clusters = [[] for _ in range(numClusters)] # Creates a array of lists to hold cluster values
+
+    i=0
+    for row in clusters_data.iterrows():
+        clusters[clustersLabels[i]].append(row[1])
+        i = i + 1
+
+    i = 0
+    for cluster in clusters:
+        dfCluster = pd.DataFrame(cluster, columns=clusters_data.columns).round(decimals=2).sort_values(by=sortFeatures, ascending=ascending)
+        dfCluster.to_csv('timeOutput/cluster' + str(i) + '.csv', index=False)
+
+
+        stats = {}
+        # Loop over numeric columns and calculate statistics
+        for col in dfCluster.columns:
+            stats[col] = {
+                'mean': float(dfCluster[col].mean()),
+                'median': float(dfCluster[col].median()),
+                'std_dev': float(dfCluster[col].std()),
+                'min': float(dfCluster[col].min()),
+                'max': float(dfCluster[col].max()),
+                'count': float(dfCluster[col].count()),
+            }
+
+        # Save to JSON file
+        with open('timeOutput/dataC' + str(i) + '.json', 'w') as f:
+            json.dump(stats, f, indent=4)
+
+        i = i + 1
+
 
 # Importing data
-accident_data = pd.read_csv('../datasets/accident.csv')
+accident_data = pd.read_csv('../datasets/filtered_accident.csv')
 
 # Format time
 accident_data['ACCIDENT_TIME'] = pd.to_datetime(accident_data['ACCIDENT_TIME'], format='%H:%M:%S')
-
-# Drop data with invalid weekday code
-accident_data = accident_data[accident_data['DAY_OF_WEEK'] != 0]
 
 # Number time by hour
 accident_data['hour'] = accident_data['ACCIDENT_TIME'].dt.hour
@@ -59,10 +96,11 @@ normalisedTime_data['weighted_ppl_killed'] = 2 * ((normalisedTime_data['weighted
 
 
 # Using elbow method to find best k value: The following code is from week 6 workshop
+seed = 120
 distortions = []
 k_range = range(1, 15)
 for k in k_range:
-    kmeans = KMeans(n_clusters=k)
+    kmeans = KMeans(n_clusters=k, random_state=seed)
     kmeans.fit(normalisedTime_data)
     distortions.append(kmeans.inertia_)  # The sum of squared errors
 
@@ -74,7 +112,7 @@ pt.ylabel('Distortion')
 pt.savefig('DayTimeClusteringElbow.png')
 
 # K value of 7 or 8 was found to be useful
-clusters = KMeans(n_clusters=7)
+clusters = KMeans(n_clusters=7, random_state=seed)
 clusters.fit(normalisedTime_data)
 
 colormap = {0: 'red', 1: 'green', 2: 'blue', 3: 'darkviolet', 4: 'orange', 5: 'cadetblue', 6: 'orchid', 7: 'lime'}
@@ -88,77 +126,16 @@ ax.scatter(time_data['hour'],
            c=[colormap.get(x) for x in clusters.labels_])
 
 ax.set_ylabel('Day of the Week')
+ax.set_yticks([1, 2, 3, 4, 5, 6, 7])
+ax.set_yticklabels(["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
+
+
+
 ax.set_xlabel('Hour')
 ax.set_zlabel('Weighted people killed')
-ax.set_title(f"k = {len(set(clusters.labels_))}")
-
+ax.set_title(f"Day, Time clustering against weighted deaths; k= {len(set(clusters.labels_))}")
 pt.savefig('DayTimeClustering.png')
 
-# Putting top 10 rows within a cluser into its own csv file for output
-# Using lists whcih will be converted to dataFrames later (more efficent to use lists when appending rows repeatdly)
-cluster0lst = []
-cluster1lst = []
-cluster2lst = []
-cluster3lst = []
-cluster4lst = []
-cluster5lst = []
-cluster6lst = []
-cluster7lst = []
+outputClusters(clusters.labels_, ['DAY_OF_WEEK', 'hour'], False, time_data)
 
 
-i = 0
-for row in time_data.iterrows():
-    if clusters.labels_[i] == 0:
-        cluster0lst.append(row[1])
-    elif clusters.labels_[i] == 1:
-        cluster1lst.append(row[1])
-    elif clusters.labels_[i] == 2:
-        cluster2lst.append(row[1])
-    elif clusters.labels_[i] == 3:
-        cluster3lst.append(row[1])
-    elif clusters.labels_[i] == 4:
-        cluster4lst.append(row[1])
-    elif clusters.labels_[i] == 5:
-        cluster5lst.append(row[1])
-    elif clusters.labels_[i] == 6:
-        cluster6lst.append(row[1])
-    elif clusters.labels_[i] == 7:
-        cluster7lst.append(row[1])
-    else:
-        print("ERROR")
-        break
-    i = i + 1
-
-cluster0 = pd.DataFrame(cluster0lst, columns=time_data.columns).round(decimals=2)
-cluster1 = pd.DataFrame(cluster1lst, columns=time_data.columns).round(decimals=2)
-cluster2 = pd.DataFrame(cluster2lst, columns=time_data.columns).round(decimals=2)
-cluster3 = pd.DataFrame(cluster3lst, columns=time_data.columns).round(decimals=2)
-cluster4 = pd.DataFrame(cluster4lst, columns=time_data.columns).round(decimals=2)
-cluster5 = pd.DataFrame(cluster5lst, columns=time_data.columns).round(decimals=2)
-cluster6 = pd.DataFrame(cluster6lst, columns=time_data.columns).round(decimals=2)
-cluster7 = pd.DataFrame(cluster7lst, columns=time_data.columns).round(decimals=2)
-
-# Sorting based on Crash count
-cluster0 = cluster0.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster1 = cluster1.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster2 = cluster2.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster3 = cluster3.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster4 = cluster4.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster5 = cluster5.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster6 = cluster6.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-cluster7 = cluster7.sort_values(by=['DAY_OF_WEEK', 'hour'], ascending=False)
-
-
-# Putting top 10 results into CSVs
-numValues = 10
-cluster0.to_csv("cluster0.csv", index=False)
-cluster1.to_csv("cluster1.csv", index=False)
-cluster2.to_csv("cluster2.csv", index=False)
-cluster3.to_csv("cluster3.csv", index=False)
-cluster4.to_csv("cluster4.csv", index=False)
-cluster5.to_csv("cluster5.csv", index=False)
-cluster6.to_csv("cluster6.csv", index=False)
-cluster7.to_csv("cluster7.csv", index=False)
-
-
-# HOUR IS ALSO CIRCULAR

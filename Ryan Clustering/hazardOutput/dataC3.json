@@ -1,0 +1,58 @@
+{
+    "UNPROTECTED": {
+        "mean": 0.0,
+        "median": 0.0,
+        "std_dev": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "count": 638.0
+    },
+    "SPEED_ZONE": {
+        "mean": 59.5141065830721,
+        "median": 60.0,
+        "std_dev": 7.616120744671359,
+        "min": 40.0,
+        "max": 70.0,
+        "count": 638.0
+    },
+    "MAX_AGE": {
+        "mean": 44.01567398119122,
+        "median": 39.0,
+        "std_dev": 18.282702501805527,
+        "min": 4.0,
+        "max": 70.0,
+        "count": 638.0
+    },
+    "SEX": {
+        "mean": 0.6567398119122257,
+        "median": 1.0,
+        "std_dev": 0.47516999983394764,
+        "min": 0.0,
+        "max": 1.0,
+        "count": 638.0
+    },
+    "LIGHT_CONDITION": {
+        "mean": 1.85423197492163,
+        "median": 1.0,
+        "std_dev": 1.165600332226361,
+        "min": 1.0,
+        "max": 9.0,
+        "count": 638.0
+    },
+    "severity_index": {
+        "mean": 5.285266457680251,
+        "median": 4.0,
+        "std_dev": 2.967664962424636,
+        "min": 3.0,
+        "max": 21.0,
+        "count": 638.0
+    },
+    "SEVERITY": {
+        "mean": 1.0,
+        "median": 1.0,
+        "std_dev": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "count": 638.0
+    }
+}

@@ -1,0 +1,26 @@
+{
+    "hour": {
+        "mean": 4.0,
+        "median": 4.0,
+        "std_dev": 2.422120283277993,
+        "min": 0.0,
+        "max": 8.0,
+        "count": 16.0
+    },
+    "DAY_OF_WEEK": {
+        "mean": 5.4375,
+        "median": 5.0,
+        "std_dev": 0.51234753829798,
+        "min": 5.0,
+        "max": 6.0,
+        "count": 16.0
+    },
+    "weighted_ppl_killed": {
+        "mean": 16.969375,
+        "median": 16.6,
+        "std_dev": 5.822692926530357,
+        "min": 8.71,
+        "max": 27.84,
+        "count": 16.0
+    }
+}
