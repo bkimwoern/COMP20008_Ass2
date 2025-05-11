@@ -129,7 +129,6 @@ def random_imputation(filtered_person, is_encased):
 
     # Randomly assign worn (1), not worn (0)
     imputed_values = np.random.choice([1, 0], size=mask.sum(), p=[probability_0, probability_1])
-    #filtered_person.loc[mask, 'HELMET_BELT_WORN'] = imputed_values
     filtered_person.loc[mask, 'UNPROTECTED'] = imputed_values
 
 
