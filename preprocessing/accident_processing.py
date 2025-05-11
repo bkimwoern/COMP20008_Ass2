@@ -22,7 +22,6 @@ def process_accident_csv():
     filtered_accident_no_nan = filtered_accident
     filtered_accident_no_nan.dropna()
 
-    #   REMANDER 2 VALUES USE PROPORTIONAL RANDOM IMPUTATION TO IMPUTE
     filtered_accident.to_csv('datasets/filtered_accident.csv', index=False)
 
     # Creating version without nan values
