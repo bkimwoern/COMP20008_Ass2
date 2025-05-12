@@ -22,7 +22,6 @@ def process_accident_csv():
     filtered_accident_no_nan = filtered_accident
     filtered_accident_no_nan.dropna()
 
-    #   REMANDER 2 VALUES USE PROPORTIONAL RANDOM IMPUTATION TO IMPUTE
     filtered_accident.to_csv('datasets/filtered_accident.csv', index=False)
 
     # Creating version without nan values
@@ -31,7 +30,7 @@ def process_accident_csv():
 def public_holiday_column(filtered_accident):
     # --- Normalising values in public_holiday_csv
     public_holiday_csv = pd.read_csv('datasets/public_holiday_2012-2024.csv')
-    public_holiday_csv['Date'] = pd.to_datetime(public_holiday_csv['Date'], format='%d/%m/%Y')
+    #public_holiday_csv['Date'] = pd.to_datetime(public_holiday_csv['Date'], format='%d/%m/%Y')
     public_holiday_csv['National_holiday'] = public_holiday_csv['National_holiday'].astype(bool)
 
     # --- Extracting dates from accident_csv that fall on national holidays or public holidays in Melbourne ---
