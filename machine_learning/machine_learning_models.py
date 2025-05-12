@@ -240,8 +240,8 @@ def random_forest_tree_model():
         X_test, y_test,
         selected_features,
         [1, 0],
-
-        rf=True)
+        rf=True
+    )
 
 def main():
     with open("machine_learning/evaluations.txt", "w") as f, redirect_stdout(f):

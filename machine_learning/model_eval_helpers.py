@@ -158,14 +158,15 @@ Random Forest Classifier Model.
 
 Best Depth and n_estimators is determined by the combination of these two parameters that yielded the highest 
 F1 Score"""
-def evaluate_random_forest(model_fn, X_train, y_train, X_validate, y_validate, depths, n_estimators, print_metric_summary=True):
+def evaluate_random_forest(model_fn, X_train, y_train, X_validate, y_validate, depths, n_estimators,
+                           print_metric_summary=True):
 
     # narrow scope of selected features to the top 25 by highest mutual information (M.I)
     selected_features = feature_selection(X_train, y_train, top_F=25)
 
     # ---{ stores evaluation metrics at various n and depth combinations }--- #
     metrics_per_combination = {}
-    print("------------[:: EVALUATION SCORES, PER DEPTH AND N_ESTIMATORS   ::]------------\n")
+    print("------------------------------[:: N_ESTIMATORS ::]-----------------------------\n")
 
     # ---{ iterate through each depth specified range }--- #
     for depth in depths:
