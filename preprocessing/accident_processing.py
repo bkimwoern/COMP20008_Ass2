@@ -7,7 +7,7 @@ def process_accident_csv():
     #   Adding a public holiday boolean column to filtered_accident csv
     public_holiday_column(filtered_accident)
     #   Adding a night or day column to filtered_accident csv
-    night_day_column(filtered_accident)
+    #night_day_column(filtered_accident)
     #   Fixing incorrect DAY_OF_WEEK values in filtered_accident csv
     day_of_week(filtered_accident)
     # Adding a column that indicates whether accident occurred at an intersection (1) or not (0)

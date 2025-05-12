@@ -1,16 +1,19 @@
 import pandas as pd
 
-from .utils import filter_out_value
-
-
+# --- Main function to process the filtered_vehicle.csv file ---
 def process_vehicle_csv():
+    # Reading the filtered vehicle dataset
     filtered_vehicle_csv = pd.read_csv('datasets/filtered_vehicle.csv')
 
+    # Standardising vehicle body style values
     process_vehicle_body_type(filtered_vehicle_csv)
+
+    # Cleaning and updating vehicle type information based on body style
     process_vehicle_type(filtered_vehicle_csv)
 
+    # Creating a version with missing values dropped
     filtered_vehicle_no_nan = filtered_vehicle_csv
-    filtered_vehicle_no_nan.dropna()
+    filtered_vehicle_no_nan = filtered_vehicle_no_nan.dropna()
 
     filtered_vehicle_csv.to_csv('datasets/filtered_vehicle_new.csv', index=False)
     filtered_vehicle_no_nan.to_csv('datasets/filtered_vehicle_no_nan.csv', index=False)
