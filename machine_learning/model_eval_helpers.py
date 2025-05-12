@@ -66,7 +66,7 @@ def print_stats(model, X_train, y_train, X_test, y_test, selected_features, clas
     print_feature_importances(model, selected_features)
 
     # plot confusion matrix
-    plot_confusion_matrix(model, X_test, y_test, class_labels)
+    plot_confusion_matrix(model, X_test, y_test, class_labels, rf)
 
 """Function that returns the Top_F (a desired number of features) features that yield the highest mutual information 
 with respect to the class label. 

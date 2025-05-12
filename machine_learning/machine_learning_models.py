@@ -240,6 +240,7 @@ def random_forest_tree_model():
         X_test, y_test,
         selected_features,
         [1, 0],
+
         rf=True)
 
 def main():
