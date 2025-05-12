@@ -1,0 +1,181 @@
+
+::::------------------[ MODEL: DECISION TREE CLASSIFIER ]------------------::::
+
+----------------[:: AVERAGE OF EVALUATION SCORES, PER DEPTH ::]----------------
+---> Depth=1  ::  F1=0.5635  ::  Recall=0.4581  ::  Precision=0.7324
+---> Depth=2  ::  F1=0.7060  ::  Recall=0.7651  ::  Precision=0.6556
+---> Depth=3  ::  F1=0.6946  ::  Recall=0.7099  ::  Precision=0.6826
+---> Depth=4  ::  F1=0.7051  ::  Recall=0.7427  ::  Precision=0.6740
+---> Depth=5  ::  F1=0.7135  ::  Recall=0.7573  ::  Precision=0.6749
+---> Depth=6  ::  F1=0.7047  ::  Recall=0.7249  ::  Precision=0.6858
+---> Depth=7  ::  F1=0.6994  ::  Recall=0.7198  ::  Precision=0.6804
+---> Depth=8  ::  F1=0.6936  ::  Recall=0.7150  ::  Precision=0.6734
+---> Depth=9  ::  F1=0.6861  ::  Recall=0.7042  ::  Precision=0.6690
+---> Depth=10  ::  F1=0.6891  ::  Recall=0.7077  ::  Precision=0.6720
+:: Best Depth by F1 Score = 5
+
+
+-------------------------------[:: MAX DEPTH ::]-------------------------------
+ ---> Depth = 5 
+
+---------------------------[:: MODEL ACCURACIES :: ]---------------------------
+---> Accuracy of training set....: 0.7083333333333334
+---> Accuracy of testing set.....: 0.7055267702936097
+---> Accuracy difference.........: 0.0028065630397237085 
+
+--------------------------[:: FEATURE IMPORTANCES ::]--------------------------
+---> SPEED_ZONE: 0.4799
+---> TYPE: Collision with vehicle: 0.2012
+---> SEX: M: 0.1672
+---> TYPE: Collision with a fixed object: 0.0596
+---> HOUR_COS: 0.0408
+---> LIGHT_CONDITION: 0.0277
+---> NO_OF_VEHICLES: 0.0106
+---> SEX: U: 0.0095
+---> GEOM: Not at intersection: 0.0035
+---> SEX: F: 0.0000
+
+------------------------[:: FINAL EVALUATION SCORES ::]------------------------
+---> F1 SCORE.............: 0.7256637168141593
+---> RECALL SCORE.........: 0.7789291882556131
+---> PRECISION SCORE......: 0.6792168674698795
+---> CONFUSION MATRIX.....:
+ [[451 128]
+ [213 366]]
+
+
+
+::::---------------[ MODEL: RANDOM FOREST TREE CLASSIFIER  ]---------------::::
+
+------------[:: EVALUATION SCORES, PER DEPTH AND N_ESTIMATORS   ::]------------
+
+---> Depth=5, n_estimators=20  ::   F1=0.7226  |   Recall=0.7257  |   Precision=0.7195
+---> Depth=5, n_estimators=40  ::   F1=0.7144  |   Recall=0.7106  |   Precision=0.7183
+---> Depth=5, n_estimators=60  ::   F1=0.7176  |   Recall=0.7106  |   Precision=0.7247
+---> Depth=5, n_estimators=80  ::   F1=0.7155  |   Recall=0.7063  |   Precision=0.7251
+---> Depth=5, n_estimators=100  ::   F1=0.7201  |   Recall=0.7084  |   Precision=0.7321
+---> Depth=6, n_estimators=20  ::   F1=0.7286  |   Recall=0.7279  |   Precision=0.7294
+---> Depth=6, n_estimators=40  ::   F1=0.7325  |   Recall=0.7365  |   Precision=0.7286
+---> Depth=6, n_estimators=60  ::   F1=0.7290  |   Recall=0.7322  |   Precision=0.7259
+---> Depth=6, n_estimators=80  ::   F1=0.7354  |   Recall=0.7322  |   Precision=0.7386
+---> Depth=6, n_estimators=100  ::   F1=0.7328  |   Recall=0.7343  |   Precision=0.7312
+---> Depth=7, n_estimators=20  ::   F1=0.7290  |   Recall=0.7322  |   Precision=0.7259
+---> Depth=7, n_estimators=40  ::   F1=0.7302  |   Recall=0.7279  |   Precision=0.7326
+---> Depth=7, n_estimators=60  ::   F1=0.7294  |   Recall=0.7279  |   Precision=0.7310
+---> Depth=7, n_estimators=80  ::   F1=0.7296  |   Recall=0.7257  |   Precision=0.7336
+---> Depth=7, n_estimators=100  ::   F1=0.7247  |   Recall=0.7192  |   Precision=0.7303
+---> Depth=8, n_estimators=20  ::   F1=0.7347  |   Recall=0.7387  |   Precision=0.7308
+---> Depth=8, n_estimators=40  ::   F1=0.7468  |   Recall=0.7516  |   Precision=0.7420
+---> Depth=8, n_estimators=60  ::   F1=0.7443  |   Recall=0.7451  |   Precision=0.7435
+---> Depth=8, n_estimators=80  ::   F1=0.7441  |   Recall=0.7473  |   Precision=0.7409
+---> Depth=8, n_estimators=100  ::   F1=0.7443  |   Recall=0.7451  |   Precision=0.7435
+---> Depth=9, n_estimators=20  ::   F1=0.7216  |   Recall=0.7192  |   Precision=0.7239
+---> Depth=9, n_estimators=40  ::   F1=0.7279  |   Recall=0.7279  |   Precision=0.7279
+---> Depth=9, n_estimators=60  ::   F1=0.7318  |   Recall=0.7279  |   Precision=0.7358
+---> Depth=9, n_estimators=80  ::   F1=0.7277  |   Recall=0.7214  |   Precision=0.7341
+---> Depth=9, n_estimators=100  ::   F1=0.7269  |   Recall=0.7214  |   Precision=0.7325
+---> Depth=10, n_estimators=20  ::   F1=0.7463  |   Recall=0.7559  |   Precision=0.7368
+---> Depth=10, n_estimators=40  ::   F1=0.7290  |   Recall=0.7322  |   Precision=0.7259
+---> Depth=10, n_estimators=60  ::   F1=0.7347  |   Recall=0.7387  |   Precision=0.7308
+---> Depth=10, n_estimators=80  ::   F1=0.7322  |   Recall=0.7322  |   Precision=0.7322
+---> Depth=10, n_estimators=100  ::   F1=0.7373  |   Recall=0.7365  |   Precision=0.7381
+---> Depth=11, n_estimators=20  ::   F1=0.7425  |   Recall=0.7473  |   Precision=0.7377
+---> Depth=11, n_estimators=40  ::   F1=0.7304  |   Recall=0.7343  |   Precision=0.7265
+---> Depth=11, n_estimators=60  ::   F1=0.7335  |   Recall=0.7343  |   Precision=0.7328
+---> Depth=11, n_estimators=80  ::   F1=0.7384  |   Recall=0.7408  |   Precision=0.7361
+---> Depth=11, n_estimators=100  ::   F1=0.7381  |   Recall=0.7365  |   Precision=0.7397
+---> Depth=12, n_estimators=20  ::   F1=0.7347  |   Recall=0.7387  |   Precision=0.7308
+---> Depth=12, n_estimators=40  ::   F1=0.7417  |   Recall=0.7473  |   Precision=0.7362
+---> Depth=12, n_estimators=60  ::   F1=0.7365  |   Recall=0.7365  |   Precision=0.7365
+---> Depth=12, n_estimators=80  ::   F1=0.7368  |   Recall=0.7408  |   Precision=0.7329
+---> Depth=12, n_estimators=100  ::   F1=0.7335  |   Recall=0.7343  |   Precision=0.7328
+---> Depth=13, n_estimators=20  ::   F1=0.7402  |   Recall=0.7538  |   Precision=0.7271
+---> Depth=13, n_estimators=40  ::   F1=0.7438  |   Recall=0.7495  |   Precision=0.7383
+---> Depth=13, n_estimators=60  ::   F1=0.7359  |   Recall=0.7343  |   Precision=0.7375
+---> Depth=13, n_estimators=80  ::   F1=0.7384  |   Recall=0.7408  |   Precision=0.7361
+---> Depth=13, n_estimators=100  ::   F1=0.7365  |   Recall=0.7365  |   Precision=0.7365
+---> Depth=14, n_estimators=20  ::   F1=0.7377  |   Recall=0.7473  |   Precision=0.7284
+---> Depth=14, n_estimators=40  ::   F1=0.7455  |   Recall=0.7559  |   Precision=0.7353
+---> Depth=14, n_estimators=60  ::   F1=0.7356  |   Recall=0.7451  |   Precision=0.7263
+---> Depth=14, n_estimators=80  ::   F1=0.7356  |   Recall=0.7451  |   Precision=0.7263
+---> Depth=14, n_estimators=100  ::   F1=0.7388  |   Recall=0.7451  |   Precision=0.7325
+---> Depth=15, n_estimators=20  ::   F1=0.7412  |   Recall=0.7516  |   Precision=0.7311
+---> Depth=15, n_estimators=40  ::   F1=0.7443  |   Recall=0.7451  |   Precision=0.7435
+---> Depth=15, n_estimators=60  ::   F1=0.7411  |   Recall=0.7451  |   Precision=0.7372
+---> Depth=15, n_estimators=80  ::   F1=0.7326  |   Recall=0.7279  |   Precision=0.7374
+---> Depth=15, n_estimators=100  ::   F1=0.7281  |   Recall=0.7257  |   Precision=0.7304
+---> Depth=16, n_estimators=20  ::   F1=0.7203  |   Recall=0.7149  |   Precision=0.7259
+---> Depth=16, n_estimators=40  ::   F1=0.7261  |   Recall=0.7300  |   Precision=0.7222
+---> Depth=16, n_estimators=60  ::   F1=0.7400  |   Recall=0.7408  |   Precision=0.7392
+---> Depth=16, n_estimators=80  ::   F1=0.7351  |   Recall=0.7343  |   Precision=0.7359
+---> Depth=16, n_estimators=100  ::   F1=0.7302  |   Recall=0.7279  |   Precision=0.7326
+---> Depth=17, n_estimators=20  ::   F1=0.7497  |   Recall=0.7667  |   Precision=0.7335
+---> Depth=17, n_estimators=40  ::   F1=0.7383  |   Recall=0.7495  |   Precision=0.7275
+---> Depth=17, n_estimators=60  ::   F1=0.7452  |   Recall=0.7516  |   Precision=0.7389
+---> Depth=17, n_estimators=80  ::   F1=0.7406  |   Recall=0.7430  |   Precision=0.7382
+---> Depth=17, n_estimators=100  ::   F1=0.7376  |   Recall=0.7408  |   Precision=0.7345
+---> Depth=18, n_estimators=20  ::   F1=0.7363  |   Recall=0.7387  |   Precision=0.7339
+---> Depth=18, n_estimators=40  ::   F1=0.7465  |   Recall=0.7473  |   Precision=0.7457
+---> Depth=18, n_estimators=60  ::   F1=0.7330  |   Recall=0.7322  |   Precision=0.7338
+---> Depth=18, n_estimators=80  ::   F1=0.7438  |   Recall=0.7495  |   Precision=0.7383
+---> Depth=18, n_estimators=100  ::   F1=0.7376  |   Recall=0.7408  |   Precision=0.7345
+---> Depth=19, n_estimators=20  ::   F1=0.7214  |   Recall=0.7214  |   Precision=0.7214
+---> Depth=19, n_estimators=40  ::   F1=0.7415  |   Recall=0.7495  |   Precision=0.7336
+---> Depth=19, n_estimators=60  ::   F1=0.7443  |   Recall=0.7451  |   Precision=0.7435
+---> Depth=19, n_estimators=80  ::   F1=0.7403  |   Recall=0.7451  |   Precision=0.7356
+---> Depth=19, n_estimators=100  ::   F1=0.7433  |   Recall=0.7473  |   Precision=0.7393
+---> Depth=20, n_estimators=20  ::   F1=0.7302  |   Recall=0.7365  |   Precision=0.7240
+---> Depth=20, n_estimators=40  ::   F1=0.7513  |   Recall=0.7603  |   Precision=0.7426
+---> Depth=20, n_estimators=60  ::   F1=0.7503  |   Recall=0.7559  |   Precision=0.7447
+---> Depth=20, n_estimators=80  ::   F1=0.7487  |   Recall=0.7495  |   Precision=0.7478
+---> Depth=20, n_estimators=100  ::   F1=0.7400  |   Recall=0.7408  |   Precision=0.7392
+:: Best Depth by F1 Score = 20 ::
+:: Best n_estimators by F1 Score = 40 ::
+
+-------------------------------[:: MAX DEPTH ::]-------------------------------
+ ---> Depth = 20 
+
+-------------------------------[:: N_ESTIMATORS ::]-------------------------------
+ ---> Number of estimators = 40 
+
+---------------------------[:: MODEL ACCURACIES :: ]---------------------------
+---> Accuracy of training set....: 0.8147668393782384
+---> Accuracy of testing set.....: 0.731433506044905
+---> Accuracy difference.........: 0.08333333333333337 
+
+--------------------------[:: FEATURE IMPORTANCES ::]--------------------------
+---> SPEED_ZONE: 0.2217
+---> HOUR_SIN: 0.0841
+---> HOUR_COS: 0.0828
+---> SEX: M: 0.0783
+---> UNPROTECTED_RATIO: 0.0613
+---> SEX: F: 0.0564
+---> NO_PERSONS: 0.0557
+---> TYPE: Collision with a fixed object: 0.0450
+---> NO_OF_VEHICLES: 0.0444
+---> AGE_GROUP: 30-39: 0.0390
+---> TYPE: Collision with vehicle: 0.0360
+---> LIGHT_CONDITION: 0.0357
+---> AGE_GROUP: 40-49: 0.0294
+---> GEOM: Not at intersection: 0.0233
+---> TYPE: Struck Pedestrian: 0.0209
+---> GEOM: Cross intersection: 0.0172
+---> SEX: U: 0.0141
+---> DAY: Friday: 0.0135
+---> DAY: Tuesday: 0.0116
+---> GEOM: T intersection: 0.0115
+---> DAY: Sunday: 0.0107
+---> TYPE: Struck animal: 0.0066
+---> TYPE: collision with some other object: 0.0006
+---> GEOM: Road closure: 0.0000
+---> PUBLIC_HOLIDAY: 0.0000
+
+------------------------[:: FINAL EVALUATION SCORES ::]------------------------
+---> F1 SCORE.............: 0.7330472103004292
+---> RECALL SCORE.........: 0.7374784110535406
+---> PRECISION SCORE......: 0.7286689419795221
+---> CONFUSION MATRIX.....:
+ [[427 152]
+ [159 420]]
+
+
