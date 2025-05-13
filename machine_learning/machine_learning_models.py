@@ -5,24 +5,27 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from contextlib import redirect_stdout
 
-#from machine_learning.model_eval_helpers import evaluate_decision_tree, evaluate_random_forest, print_stats
+# from machine_learning.model_eval_helpers import evaluate_decision_tree, evaluate_random_forest, print_stats
 from model_eval_helpers import (evaluate_decision_tree, evaluate_random_forest, print_stats)
 
 
 def create_model_dataframe():
-    # reading in csv's relevant to research exploration for time-correlated factors
+    """ Function applies final pre-processing for specific implementation into machine learning models,
+        additionally defines the feature suite used by both models. """
+
+    # reading in CSVs relevant to research exploration for time-correlated factors
     accident_df = pd.read_csv('datasets/filtered_accident_no_nan.csv')
     person_df = pd.read_csv('datasets/filtered_person_no_nan.csv')
 
     # removes speed beyond the range of 120km/h
     accident_df = accident_df[accident_df['SPEED_ZONE'] < 120]
 
-    #computes ratio of unprotected:protected persons involved in a given accident
+    # computes ratio of unprotected:protected persons involved in a given accident
     # encodes 1 if accident occurred at an intersection, 0 if not at an intersection
     accident_df['AT_INTERSECTION'] = accident_df['ROAD_GEOMETRY'].apply(lambda x: 1 if x in [1, 2, 3, 4] else 0)
 
     # computes ratio of unprotected:protected persons involved in a given accident
-    unprotected_ratio = person_df.groupby('ACCIDENT_NO')['UNPROTECTED'].mean().reset_index(name = 'UNPROTECTED_RATIO')
+    unprotected_ratio = person_df.groupby('ACCIDENT_NO')['UNPROTECTED'].mean().reset_index(name='UNPROTECTED_RATIO')
     accident_df = accident_df.merge(unprotected_ratio, on='ACCIDENT_NO')
 
     # computes the proportion of each person's 'AGE_GROUP'(ing) per accident.
@@ -74,8 +77,7 @@ def create_model_dataframe():
     non_fatal_records = non_fatal_records.sample(n=fatal_records.shape[0], random_state=42)
     balanced_df = pd.concat([fatal_records, non_fatal_records])
 
-    #pd.set_option('display.max_rows', None)
-
+    # pd.set_option('display.max_rows', None)
 
     # ---{ defining the scope of feature suite, defining class label }--- #
     X_columns = [
@@ -100,24 +102,33 @@ def create_model_dataframe():
         'HOUR_SIN', 'HOUR_COS',
         'DAY: Sunday', 'DAY: Monday', 'DAY: Tuesday', 'DAY: Wednesday', 'DAY: Thursday', 'DAY: Friday',
         'DAY: Saturday'
-        ]
-
+    ]
     y_column = 'IS_LETHAL'
 
     # return final balanced data_frame with curated feature_suite
     return balanced_df[X_columns + [y_column]], X_columns, y_column
 
 
+def model_dt(max_depth):
+    """ Function that defines the 'static' hyperparameters for the Decision Tree Classifier model.
 
-"""Decision Tree Classifier Model"""
+        When evaluating the Decision Tree Model, the best depth will be determined dynamically based on the
+        criterion for each split being based on entropy. """
+
+    return DecisionTreeClassifier(
+        criterion='entropy',  # split based on entropy criterion
+        max_depth=max_depth  # dynamically determine the best depth from the depths in range(1, 11)
+    )
+
+
 def decision_tree_model():
+    """ Decision Tree Classifier Model """
 
     # processed feature suite for specialised use within machine learning models
     analysis_df, X_columns, y_column = create_model_dataframe()
 
     # split data into training set (%60), validation set(20%) and testing set (20%)
     # stratifying to ensure even proportion of class types (lethal 1, non-lethal 0)
-
     train_validate, test = train_test_split(
         analysis_df,
         test_size=0.2,
@@ -128,22 +139,14 @@ def decision_tree_model():
     # ---{ separating each set by feature/X_columns and the class label/y_column }--- #
     X_train_validate = train_validate[X_columns]
     y_train_validate = train_validate[y_column]
-
     X_test = test[X_columns]
     y_test = test[y_column]
 
-    # defining hyperparameters per depth of the evaluation function.
-    model_fn = lambda max_depth: DecisionTreeClassifier(
-        criterion='entropy',
-        max_depth=max_depth
-    )
-
     # find the best depth using cross validation, prints out the top 10 most selected features based on MI
     best_depth, selected_features = evaluate_decision_tree(
-        model_fn,
+        lambda max_depth: model_dt(max_depth),
         X_train_validate,
-        y_train_validate,
-        depths=range(1,11)
+        y_train_validate
     )
 
     # refining the scope of feature suite to selected features
@@ -151,7 +154,7 @@ def decision_tree_model():
     X_test = X_test[selected_features]
 
     # appropriate depth determined to be 5
-    final_model = model_fn( max_depth=best_depth)
+    final_model = model_dt(max_depth=best_depth)
     final_model.fit(X_train_validate, y_train_validate)
 
     # print stats of the model
@@ -165,21 +168,38 @@ def decision_tree_model():
     )
 
 
-"""Random Forest Classifier Model"""
+def model_rf(max_depth, n_estimators):
+    """ Function that defines static hyperparameters for the Random Forest Classifier model.
+
+        n_estimators and depth is determined dynamically through the best F1 generated by a combination of the two. """
+
+    return RandomForestClassifier(
+        n_estimators=n_estimators,  # dynamically determine best n_estimator from [20, 40, 60, 80, 100]
+        max_depth=max_depth,  # dynamically determine the best depth within range(5, 21)
+        criterion='entropy',  # same criterion as other model, for same baseline of comparison
+        bootstrap=True,  # ensures each sample pulled from dataset is drawn randomly with replacement
+        min_samples_leaf=5,  # ...
+        max_features='sqrt',  # the number of features used per tree
+        random_state=42  # for reproducible results
+    )
+
+
 def random_forest_tree_model():
+    """Random Forest Classifier Model"""
+
     # same feature suite as other model
     analysis_df, X_columns, y_column = create_model_dataframe()
 
     # first split separates the testing set (20%) from training and validation (80%)
     train_and_validate, test = train_test_split(
         analysis_df,
-        test_size = 0.20,
+        test_size=0.20,
         random_state=42,
         stratify=analysis_df['IS_LETHAL']
     )
 
-    # following split separates the validation set (20%), note that bootstrap sampling is used here, not Cross Validation
-    # stratifying to ensure even proportion of class types (lethal 1, non-lethal 0)
+    # following split separates the validation set (20%), bootstrap sampling is used in Random Forest Classifier model.
+    # stratify to ensure even proportion of class types (lethal 1, non-lethal 0)
     train, validate = train_test_split(
         train_and_validate,
         test_size=0.2,
@@ -197,27 +217,15 @@ def random_forest_tree_model():
     X_test = test[X_columns]
     y_test = test[y_column]
 
-    # ---{ defining the hyperparameters used by RandomForestClassifier,}--- #
-    # { n_estimators and depth is determined dynamically through the best F1 generated by a combination of the two } #
-    model_fn = lambda max_depth, n: RandomForestClassifier(
-        n_estimators=n,
-        criterion='entropy', # same criterion as other model, for same baseline of comparison
-        max_depth=max_depth,
-        bootstrap=True,
-        min_samples_leaf=5,
-        max_features='sqrt',
-        random_state=42 # for reproducible results
-    )
-
     # finding the best_depth, best_n and selected features from evaluation of random forest function (evaluate_rf)
     best_depth, best_n, selected_features = evaluate_random_forest(
-        model_fn,
+        lambda max_depth, n_estimators: model_rf(max_depth, n_estimators),
         X_train,
         y_train,
         X_validate,
         y_validate,
+        n_estimators=[20, 40, 60, 80, 100],
         depths=range(5, 21),
-        n_estimators=[20, 40, 60, 80, 100]
     )
 
     # merging the training and validation sets as these will be used to train the final model
@@ -229,7 +237,7 @@ def random_forest_tree_model():
     X_test = X_test[selected_features]
 
     # final training and fitting of the Random Forest Classifier Model
-    final_model = model_fn(best_depth, best_n)
+    final_model = model_rf(best_depth, best_n)
     final_model.fit(X_train_and_validate, y_train_and_validate)
 
     # evaluation statistics of the final Random Forest Classifier Model's performance
@@ -243,12 +251,14 @@ def random_forest_tree_model():
         rf=True
     )
 
+
 def main():
     with open("machine_learning/evaluations.txt", "w") as f, redirect_stdout(f):
         print("\n::::------------------[ MODEL: DECISION TREE CLASSIFIER ]------------------::::\n")
         decision_tree_model()
         print("\n::::---------------[ MODEL: RANDOM FOREST TREE CLASSIFIER  ]---------------::::\n")
         random_forest_tree_model()
+
 
 if __name__ == "__main__":
     main()

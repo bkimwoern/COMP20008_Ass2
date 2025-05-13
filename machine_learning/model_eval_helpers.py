@@ -2,13 +2,15 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import Counter
-
 from sklearn.model_selection import StratifiedKFold
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score, recall_score, precision_score
 
 
 def print_model_accuracy(model, X_train, y_train, X_test, y_test):
+    """ Function prints the final training accuracy, testing accuracy, and accuracy difference of the two respectively.
+        This metric was insightful in determining when model began to overfit. """
+
     print("---------------------------[:: MODEL ACCURACIES :: ]---------------------------")
     training_accuracy = model.score(X_train, y_train)
     testing_accuracy = model.score(X_test, y_test)
@@ -18,39 +20,49 @@ def print_model_accuracy(model, X_train, y_train, X_test, y_test):
 
 
 def plot_confusion_matrix(model, X_test, y_test, class_labels, rf=False):
-
-    y_pred = model.predict(X_test)
-    c_mtrx = confusion_matrix(y_test, y_pred, labels=class_labels)
-    recall_score(y_test, y_pred, average="binary")
-    precision_score(y_test, y_pred, average="binary")
+    """ Function plots and saves the confusion matrix of a model, additionally prints the final evaluation metrics
+        of said model. """
+    y_predictions = model.predict(X_test)
+    c_mtrx = confusion_matrix(y_test, y_predictions, labels=class_labels)
+    recall_score(y_test, y_predictions, average="binary")
+    precision_score(y_test, y_predictions, average="binary")
 
     # ---{
     print("\n------------------------[:: FINAL EVALUATION SCORES ::]------------------------")
-    print("---> F1 SCORE.............:", f1_score(y_test, y_pred, average="binary"))
-    print("---> RECALL SCORE.........:", recall_score(y_test, y_pred, average="binary"))
-    print("---> PRECISION SCORE......:", precision_score(y_test, y_pred, average="binary"))
+    print("---> F1 SCORE.............:", f1_score(y_test, y_predictions, average="binary"))
+    print("---> RECALL SCORE.........:", recall_score(y_test, y_predictions, average="binary"))
+    print("---> PRECISION SCORE......:", precision_score(y_test, y_predictions, average="binary"))
     print("---> CONFUSION MATRIX.....:\n", c_mtrx)
 
     disp = ConfusionMatrixDisplay(confusion_matrix=c_mtrx, display_labels=class_labels)
     disp.plot(cmap="BuGn")
+
+    # if the model is the Random Forest Classifier, adjust title and save it accordingly
     if rf:
         plt.title("Confusion Matrix of Random Forest Classifier Model")
         plt.savefig("machine_learning/rf_confusion_matrix.png")
+
+    # else, the model is the Decision Tree Classifier, adjust title and save it accordingly
     else:
         plt.title("Confusion Matrix of Decision Tree Classifier Model")
         plt.savefig("machine_learning/dt_confusion_matrix.png")
-    plt.show()
+
     print("\n")
 
 
 def print_feature_importances(model, selected_features):
+    """ prints the feature importances (cumulative information gain) for each model's refined
+        feature selection scope. """
+    # point wise mutual information, where one category is more correlated to the class label than the other.
     print("--------------------------[:: FEATURE IMPORTANCES ::]--------------------------")
     importances = pd.Series(model.feature_importances_, index=selected_features).sort_values(ascending=False)
     for feature, importance in importances.items():
         print(f"---> {feature}: {importance:.4f}")
 
-"""Function that prints evaluation statistics for the final two model's performances."""
+
 def print_stats(model, X_train, y_train, X_test, y_test, selected_features, class_labels, rf=False):
+    """ Function that prints evaluation statistics for the final two model's performances. """
+
     print("-------------------------------[:: MAX DEPTH ::]-------------------------------\n",
           "---> Depth =", model.max_depth, "\n")
 
@@ -68,22 +80,25 @@ def print_stats(model, X_train, y_train, X_test, y_test, selected_features, clas
     # plot confusion matrix
     plot_confusion_matrix(model, X_test, y_test, class_labels, rf)
 
-"""Function that returns the Top_F (a desired number of features) features that yield the highest mutual information 
-with respect to the class label. 
 
-Used per fold for Decision Tree Classifier Model.
-Used per depth for Random Forest Classifier Model."""
 def feature_selection(X, y, top_F):
+    """Function that returns the Top_F (a desired number of features) features that yield the highest mutual information
+    with respect to the class label.
+
+    Used per fold for Decision Tree Classifier Model.
+    Used once for Random Forest Classifier model, selects larger number of features due to more estimators"""
+
     mi = mutual_info_classif(X, y, discrete_features='auto', random_state=42)
     mi_series = pd.Series(mi, index=X.columns)
     return mi_series.sort_values(ascending=False).head(top_F).index.tolist()
 
-"""Function that determines the best depth for the final Decision Tree Classifier Model, whilst using 
-Stratified Cross Validation where the number of Folds is set to 5.
 
-Best Depth is determined by the depth that yielded the highest average F1 score across each fold."""
-def evaluate_decision_tree(model_fn,  X_train_validate, y_train_validate, depths=range(1,11), N=5, top_F=10,
-                print_metric_summary=True):
+def evaluate_decision_tree(model_fn,  X_train_validate, y_train_validate, depths=range(1, 11), N=5, top_F=10,
+                           print_metric_summary=True):
+    """Function that determines the best depth for the final Decision Tree Classifier Model, whilst using
+    Stratified Cross Validation where the number of Folds is set to 5.
+
+    Best Depth is determined by the depth that yielded the highest average F1 score across each fold."""
 
     skf = StratifiedKFold(n_splits=N, random_state=42, shuffle=True)
     metrics_per_depth = {}
@@ -96,13 +111,15 @@ def evaluate_decision_tree(model_fn,  X_train_validate, y_train_validate, depths
 
         # ---{ evaluating model performance for every fold }--- #
         for train_index, validation_index in skf.split(X_train_validate, y_train_validate):
-            # determining indexes of training and validation set from the skf.get_N_splits(X, y)
+
+            # ---{ determining indexes of training and validation set from the skf.get_N_splits(X, y) }--- #
             X_train = X_train_validate.iloc[train_index]
             y_train = y_train_validate.iloc[train_index]
 
             X_validation = X_train_validate.iloc[validation_index]
             y_validation = y_train_validate.iloc[validation_index]
 
+            # ---{ limiting scope of feature set for each split, based on the features that yield highest M.I }--- #
             top_features = feature_selection(X_train, y_train, top_F)
             top_feature_counter.update(top_features)
             X_train = X_train[top_features]
@@ -120,7 +137,7 @@ def evaluate_decision_tree(model_fn,  X_train_validate, y_train_validate, depths
             metrics_per_depth[depth]["Recall"].append(recall_score(y_validation, y_prediction, average='binary'))
             metrics_per_depth[depth]["Precision"].append(precision_score(y_validation, y_prediction, average='binary'))
 
-    # for each depth, we are appending the average f1 score, recall and precision across each fold,
+    # for each depth, we are appending the average F1 score, Recall and Precision across each fold,
     # then append it to the summary
     for depth in metrics_per_depth:
         metrics_summary[depth] = {
@@ -153,13 +170,14 @@ def evaluate_decision_tree(model_fn,  X_train_validate, y_train_validate, depths
     # return best depth and updated feature selection based on most frequently selected features yielding most M.I
     return best_depth, selected_features
 
-"""Function that uses evaluation metrics to determine the best n_estimators and depth hyperparameters for the final
-Random Forest Classifier Model.
 
-Best Depth and n_estimators is determined by the combination of these two parameters that yielded the highest 
-F1 Score"""
-def evaluate_random_forest(model_fn, X_train, y_train, X_validate, y_validate, depths, n_estimators,
+def evaluate_random_forest(model_fn, X_train, y_train, X_validate, y_validate, n_estimators, depths=range(5, 21),
                            print_metric_summary=True):
+    """Function that uses evaluation metrics to determine the best n_estimators and depth hyperparameters for the final
+    Random Forest Classifier Model.
+
+    Best Depth and n_estimators is determined by the combination of these two parameters that yielded the highest
+    F1 Score. """
 
     # narrow scope of selected features to the top 25 by highest mutual information (M.I)
     selected_features = feature_selection(X_train, y_train, top_F=25)
@@ -187,6 +205,7 @@ def evaluate_random_forest(model_fn, X_train, y_train, X_validate, y_validate, d
             recall = recall_score(y_validate, y_prediction, average='binary')
             precision = precision_score(y_validate, y_prediction, average='binary')
 
+            # storing the evaluation metrics for each combination of depth and n_estimators
             metrics_per_combination[params] = {
                 "F1": f1,
                 "Recall": recall,
@@ -195,10 +214,10 @@ def evaluate_random_forest(model_fn, X_train, y_train, X_validate, y_validate, d
 
             # print the evaluation metric of models performance per n_estimators, per depth
             if print_metric_summary:
-                  print(f"---> Depth={depth}, n_estimators={n}  ::  ",
-                        f"F1={f1:.4f}  |  ",
-                        f"Recall={recall:.4f}  |  ",
-                        f"Precision={precision:.4f}")
+                print(f"---> Depth={depth}, n_estimators={n}  ::  ",
+                      f"F1={f1:.4f}  |  ",
+                      f"Recall={recall:.4f}  |  ",
+                      f"Precision={precision:.4f}")
 
     # ---{ iterating through the metrics_per_combination dict to find the best performance of params by F1 }--- #
     best_combination = max(metrics_per_combination, key=lambda param_combo: metrics_per_combination[param_combo]["F1"])
@@ -211,9 +230,10 @@ def evaluate_random_forest(model_fn, X_train, y_train, X_validate, y_validate, d
     return best_depth, best_n, selected_features
 
 
-"""Function that plots the average F1, Recall and Precision Scores of the Decision Tree Classifier Model, 
-    at each depth tested"""
 def plot_best_depth_cv(metrics_summary, depths, score_prefix):
+    """ Function that plots the average F1, Recall and Precision Scores of the Decision Tree Classifier Model,
+        at each depth tested. """
+
     plt.figure(figsize=(10, 6))
 
     # plotting average F1 score at each depth
@@ -234,4 +254,3 @@ def plot_best_depth_cv(metrics_summary, depths, score_prefix):
     plt.xticks(depths)
     plt.legend()
     plt.savefig("machine_learning/dt_evaluation_per_depth.png")
-    plt.show()
