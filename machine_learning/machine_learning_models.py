@@ -116,8 +116,9 @@ def model_dt(max_depth):
         criterion for each split being based on entropy. """
 
     return DecisionTreeClassifier(
+        max_depth=max_depth, # dynamically determine the best depth from the depths in range(1, 11)
         criterion='entropy',  # split based on entropy criterion
-        max_depth=max_depth  # dynamically determine the best depth from the depths in range(1, 11)
+        random_state=42
     )
 
 
@@ -178,7 +179,7 @@ def model_rf(max_depth, n_estimators):
         max_depth=max_depth,  # dynamically determine the best depth within range(5, 21)
         criterion='entropy',  # same criterion as other model, for same baseline of comparison
         bootstrap=True,  # ensures each sample pulled from dataset is drawn randomly with replacement
-        min_samples_leaf=5,  # ...
+        min_samples_leaf=5,  # helps to minimise overfitting, where the model may focus on noise of training set
         max_features='sqrt',  # the number of features used per tree
         random_state=42  # for reproducible results
     )

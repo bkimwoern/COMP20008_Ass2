@@ -12,11 +12,12 @@ def print_model_accuracy(model, X_train, y_train, X_test, y_test):
         This metric was insightful in determining when model began to overfit. """
 
     print("---------------------------[:: MODEL ACCURACIES :: ]---------------------------")
-    training_accuracy = model.score(X_train, y_train)
-    testing_accuracy = model.score(X_test, y_test)
-    print("---> Accuracy of training set....:", training_accuracy)
-    print("---> Accuracy of testing set.....:", testing_accuracy)
-    print("---> Accuracy difference.........:", training_accuracy - testing_accuracy, '\n')
+    training_accuracy = model.score(X_train, y_train) * 100
+    testing_accuracy = model.score(X_test, y_test) * 100
+    difference = training_accuracy - testing_accuracy
+    print(f"---> Accuracy of training set....: {training_accuracy:.1F}")
+    print(f"---> Accuracy of testing set.....: {testing_accuracy:.1F}")
+    print(f"---> Accuracy difference.........: {difference:.1F}"'\n')
 
 
 def plot_confusion_matrix(model, X_test, y_test, class_labels, rf=False):
@@ -26,13 +27,16 @@ def plot_confusion_matrix(model, X_test, y_test, class_labels, rf=False):
     c_mtrx = confusion_matrix(y_test, y_predictions, labels=class_labels)
     recall_score(y_test, y_predictions, average="binary")
     precision_score(y_test, y_predictions, average="binary")
+    f1 = f1_score(y_test, y_predictions, average="binary")
+    recall = recall_score(y_test, y_predictions, average="binary")
+    precision = precision_score(y_test, y_predictions, average="binary")
 
     # ---{
     print("\n------------------------[:: FINAL EVALUATION SCORES ::]------------------------")
-    print("---> F1 SCORE.............:", f1_score(y_test, y_predictions, average="binary"))
-    print("---> RECALL SCORE.........:", recall_score(y_test, y_predictions, average="binary"))
-    print("---> PRECISION SCORE......:", precision_score(y_test, y_predictions, average="binary"))
-    print("---> CONFUSION MATRIX.....:\n", c_mtrx)
+    print(f"---> F1 SCORE.............: {f1:.3F}")
+    print(f"---> RECALL SCORE.........: {recall:.3F}")
+    print(f"---> PRECISION SCORE......: {precision:.3F}")
+    print(f"---> CONFUSION MATRIX.....:\n", c_mtrx)
 
     disp = ConfusionMatrixDisplay(confusion_matrix=c_mtrx, display_labels=class_labels)
     disp.plot(cmap="BuGn")
@@ -50,14 +54,49 @@ def plot_confusion_matrix(model, X_test, y_test, class_labels, rf=False):
     print("\n")
 
 
-def print_feature_importances(model, selected_features):
+def print_feature_importances(model, selected_features, rf=False):
     """ prints the feature importances (cumulative information gain) for each model's refined
         feature selection scope. """
-    # point wise mutual information, where one category is more correlated to the class label than the other.
     print("--------------------------[:: FEATURE IMPORTANCES ::]--------------------------")
     importances = pd.Series(model.feature_importances_, index=selected_features).sort_values(ascending=False)
     for feature, importance in importances.items():
         print(f"---> {feature}: {importance:.4f}")
+
+    # --{ plot a bar chart of the top 10 features by feature importance for each model. }--- #
+    top_features = importances.head(10)[::-1]
+    plt.figure(figsize=(18, 12), dpi=100, constrained_layout=True)
+
+    # setting the bars equal to the ordered importance of each feature
+    bars = plt.barh(top_features.index,top_features.values, color="darkgreen")
+
+    # adding the feature importance value to each bar
+    for bar in bars:
+        width = bar.get_width()
+        is_long_bar = width > 0.1
+
+        x_pos = width - 0.01 if is_long_bar else width + 0.002
+        h_alignment = 'right' if is_long_bar else 'left'
+        color = 'white' if is_long_bar else 'black'
+
+        # adding the feature importances to each bar,
+        plt.text(x_pos, bar.get_y() + bar.get_height() / 2,
+                 f"{width:.3f}", va='center', ha=h_alignment, fontsize=10, color=color)
+
+    plt.ylabel("Feature (X column)", fontsize=12)
+    plt.xlabel("Feature importance (cumulative information gain)", fontsize=12)
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
+    # if the model is the Random Forest Classifier, adjust title and save it accordingly
+    if rf:
+        plt.title("Top 10 Feature Importances of Random Forest Classifier Model", fontsize=14, pad=20)
+        plt.tight_layout()
+        plt.savefig("machine_learning/rf_feature_importances.png")
+
+    # else, the model is the Decision Tree Classifier, adjust title and save it accordingly
+    else:
+        plt.title("Feature Importances of Decision Tree Classifier Model", fontsize=14, pad=20)
+        plt.tight_layout()
+        plt.savefig("machine_learning/dt_feature_importances.png")
 
 
 def print_stats(model, X_train, y_train, X_test, y_test, selected_features, class_labels, rf=False):
@@ -75,7 +114,7 @@ def print_stats(model, X_train, y_train, X_test, y_test, selected_features, clas
     print_model_accuracy(model, X_train, y_train, X_test, y_test)
 
     # print the sorted (desc) order of feature importances (cumulative information gain?)
-    print_feature_importances(model, selected_features)
+    print_feature_importances(model, selected_features, rf)
 
     # plot confusion matrix
     plot_confusion_matrix(model, X_test, y_test, class_labels, rf)
@@ -93,7 +132,7 @@ def feature_selection(X, y, top_F):
     return mi_series.sort_values(ascending=False).head(top_F).index.tolist()
 
 
-def evaluate_decision_tree(model_fn,  X_train_validate, y_train_validate, depths=range(1, 11), N=5, top_F=10,
+def evaluate_decision_tree(model_fn,  X_train_validate, y_train_validate, depths=range(1, 11), N=4, top_F=10,
                            print_metric_summary=True):
     """Function that determines the best depth for the final Decision Tree Classifier Model, whilst using
     Stratified Cross Validation where the number of Folds is set to 5.
@@ -158,7 +197,7 @@ def evaluate_decision_tree(model_fn,  X_train_validate, y_train_validate, depths
             F1 = metrics_summary[depth]["Average F1"]
             Recall = metrics_summary[depth]["Average Recall"]
             Precision = metrics_summary[depth]["Average Precision"]
-            print(f"---> Depth={depth}  ::  F1={F1:.4f}  ::  Recall={Recall:.4f}  ::  Precision={Precision:.4f}")
+            print(f"---> Depth={depth}  ::  F1={F1:.3f}  ::  Recall={Recall:.3f}  ::  Precision={Precision:.3f}")
 
         # ----{ prints the best depth for final model usage, based on which depth yielded the highest F1 score }--- #
         print(f":: Best Depth by F1 Score = {best_depth}")
@@ -215,9 +254,9 @@ def evaluate_random_forest(model_fn, X_train, y_train, X_validate, y_validate, n
             # print the evaluation metric of models performance per n_estimators, per depth
             if print_metric_summary:
                 print(f"---> Depth={depth}, n_estimators={n}  ::  ",
-                      f"F1={f1:.4f}  |  ",
-                      f"Recall={recall:.4f}  |  ",
-                      f"Precision={precision:.4f}")
+                      f"F1={f1:.3f}  |  ",
+                      f"Recall={recall:.3f}  |  ",
+                      f"Precision={precision:.3f}")
 
     # ---{ iterating through the metrics_per_combination dict to find the best performance of params by F1 }--- #
     best_combination = max(metrics_per_combination, key=lambda param_combo: metrics_per_combination[param_combo]["F1"])
