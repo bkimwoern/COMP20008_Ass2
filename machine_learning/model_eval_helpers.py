@@ -61,43 +61,8 @@ def print_feature_importances(model, selected_features, rf=False):
     importances = pd.Series(model.feature_importances_, index=selected_features).sort_values(ascending=False)
     for feature, importance in importances.items():
         print(f"---> {feature}: {importance:.4f}")
-
-    # --{ plot a bar chart of the top 10 features by feature importance for each model. }--- #
-    top_features = importances.head(10)[::-1]
-    plt.figure(figsize=(18, 12), dpi=100, constrained_layout=True)
-
-    # setting the bars equal to the ordered importance of each feature
-    bars = plt.barh(top_features.index,top_features.values, color="darkgreen")
-
-    # adding the feature importance value to each bar
-    for bar in bars:
-        width = bar.get_width()
-        is_long_bar = width > 0.1
-
-        x_pos = width - 0.01 if is_long_bar else width + 0.002
-        h_alignment = 'right' if is_long_bar else 'left'
-        color = 'white' if is_long_bar else 'black'
-
-        # adding the feature importances to each bar,
-        plt.text(x_pos, bar.get_y() + bar.get_height() / 2,
-                 f"{width:.3f}", va='center', ha=h_alignment, fontsize=10, color=color)
-
-    plt.ylabel("Feature (X column)", fontsize=12)
-    plt.xlabel("Feature importance (cumulative information gain)", fontsize=12)
-    plt.xticks(fontsize=10)
-    plt.yticks(fontsize=10)
-    # if the model is the Random Forest Classifier, adjust title and save it accordingly
-    if rf:
-        plt.title("Top 10 Feature Importances of Random Forest Classifier Model", fontsize=14, pad=20)
-        plt.tight_layout()
-        plt.savefig("machine_learning/rf_feature_importances.png")
-
-    # else, the model is the Decision Tree Classifier, adjust title and save it accordingly
-    else:
-        plt.title("Feature Importances of Decision Tree Classifier Model", fontsize=14, pad=20)
-        plt.tight_layout()
-        plt.savefig("machine_learning/dt_feature_importances.png")
-
+    
+    
 
 def print_stats(model, X_train, y_train, X_test, y_test, selected_features, class_labels, rf=False):
     """ Function that prints evaluation statistics for the final two model's performances. """
