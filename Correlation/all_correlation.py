@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns # requires seaborn[stats] installed
 from sklearn.feature_selection import mutual_info_classif
-from sklearn.model_selection import train_test_split
 from scipy.stats import chi2_contingency
 import statsmodels.api as sm # requires statsmodels installed
 from patsy import dmatrices 
@@ -140,27 +139,7 @@ fatal_records = person_df[person_df['DEAD'] == 1]
 non_fatal_entries = person_df[person_df['DEAD'] == 0]
 non_fatal_entries = non_fatal_entries.sample(n=fatal_records.shape[0], random_state=42)
 balanced_person_df = pd.concat([fatal_records, non_fatal_entries])
-'''
-# compute cramers v coefficient association 
-accident_cramersv = {}
-for col in accident_df:
-    if col == 'IS_LETHAL' or col == 'ACCIDENT_NO' or col == 'NO_PERSONS_KILLED' or col == 'SEVERITY':
-        continue
-    else:
-        accident_cramersv[col] = cramers_corrected_stat(accident_df['IS_LETHAL'], accident_df[col])
-print('ACCIDENT')
-for item in sorted(accident_cramersv.items(), key=lambda x: x[1], reverse=True):
-    print(item)
-person_cramersv = {}
-for col in person_df:
-    if col == 'DEAD' or col == 'ACCIDENT_NO' or col == 'INJ_LEVEL' or col == 'INJ_LEVEL_DESC':
-        continue
-    else:
-        person_cramersv[col] = cramers_corrected_stat(person_df['DEAD'], person_df[col])
-print("PERSON")
-for item in sorted(person_cramersv.items(), key=lambda x: x[1], reverse=True):
-    print(item)
-'''
+
 # create mutual information matrix of accident_df and represent in heat map
 dep_vars = ['SEVERITY', 'IS_LETHAL', 'FATAL_RATIO']
 ind_vars = ['AT_INTERSECTION', 'NO_OF_VEHICLES', 'ACCIDENT_TYPE', 'UNPROTECTED_RATIO', 'ROAD_GEOMETRY']
@@ -172,7 +151,6 @@ sns.heatmap(mutual_info_df, annot=True, cmap='coolwarm', square=True)
 plt.title('Pairwise Mutual Information')
 plt.savefig("./Correlation/Figures/accidentMIheatmap.png", dpi=300)
 plt.show()
-
 
 dep_vars = ['DEAD', 'INJ_LEVEL']
 ind_vars = ['SEX', 'AGE_GROUP', 'IN_METAL_BOX', 'ROAD_USER_TYPE', 'UNPROTECTED']
@@ -197,7 +175,6 @@ plt.title('Pairwise Normalized Mutual Information')
 plt.savefig("./Correlation/Figures/accidentNMIheatmap.png", dpi=300)
 plt.show()
 
-
 dep_vars = ['DEAD', 'INJ_LEVEL']
 ind_vars = ['SEX', 'AGE_GROUP', 'IN_METAL_BOX', 'ROAD_USER_TYPE', 'UNPROTECTED']
 
@@ -208,34 +185,3 @@ sns.heatmap(mutual_info_df, annot=True, cmap='coolwarm', square=True)
 plt.title('Pairwise Normalized Mutual Information')
 plt.savefig("./Correlation/Figures/personNMIheatmap.png", dpi=300)
 plt.show()
-
-''' # ignore
-# create side by side barplots of overall data vs fatal data by column
-compare_count_barplot(accident_df, fatal_accident_df, 'SPEED_ZONE', ylim=43, title2="Fatal")
-plt.savefig("./Correlation/Figures/speedzonecompplot.png", dpi=300)
-plt.show()
-
-compare_count_barplot(accident_df, fatal_accident_df, 'DAY_WEEK_DESC', ylim=17, title2="Fatal", order=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
-plt.savefig("./Correlation/Figures/dayweekcompplot.png", dpi=300)
-plt.show()
-
-compare_count_barplot(accident_df, fatal_accident_df, 'ROAD_GEOMETRY', ylim=71, title2="Fatal")
-plt.savefig("./Correlation/Figures/roadgeometrycompplot.png", dpi=300)
-plt.show()
-
-compare_count_barplot(accident_df, fatal_accident_df, 'ACCIDENT_TYPE', ylim=66, title2="Fatal")
-plt.savefig("./Correlation/Figures/accidenttypecompplot.png", dpi=300)
-plt.show()
-
-compare_count_barplot(accident_df, fatal_accident_df, 'NO_OF_VEHICLES', ylim=60, title2="Fatal")
-plt.savefig("./Correlation/Figures/numvehiclescompplot.png", dpi=300)
-plt.show()
-
-compare_count_barplot(person_df, fatal_person_df, 'AGE_GROUP', ylim=21, title2="Fatal", order=["13-15", "16-17", "18-21", "22-25", "26-29", "30-39", "40-49","50-59","60-64","65-69","70+"])
-plt.savefig("./Correlation/Figures/agegroupcompplot.png", dpi=300)
-plt.show()
-
-compare_count_barplot(person_df, fatal_person_df, 'UNPROTECTED', ylim=70, title2="Fatal")
-plt.savefig("./Correlation/Figures/unprotectedcompplot.png", dpi=300)
-plt.show()
-'''
