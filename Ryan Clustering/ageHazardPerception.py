@@ -1,14 +1,3 @@
-# Clustering to determine how age is related to crashes
-""""
-PLAN
-Clustering based on:
-light condition
-speed zone
-Crash Severity
-
-
-Plot against: Aga vs Crash Severity
-"""
 import matplotlib.pyplot as pt
 import pandas as pd
 from sklearn.cluster import KMeans
@@ -87,14 +76,11 @@ accident_data = accident_data[accident_data['SEVERITY'] == 1]
 # Making a severity index that weights deadly crashes higher based on kills, serious injuries and injuries
 accident_data['severity_index'] = accident_data['NO_PERSONS_KILLED'] * killMulti + accident_data['NO_PERSONS_INJ_2'] * injurySeries + accident_data['NO_PERSONS_INJ_3'] * injury
 
-
-
-# Only looking at drivers and passangers risk assesment
+# Only looking at drivers and passengers risk assessment
 person_data = person_data[~person_data['ROAD_USER_TYPE'].isin([1,6,9])]
 
 # Removing values where the age group is unknown
 person_data = person_data[person_data['AGE_GROUP'] != 'Unknown']
-
 
 # Cleaning sex and assigning number, 1 if a man and 0 if a female
 person_data = person_data[person_data['SEX'].isin(['M', 'F'])]
@@ -116,8 +102,6 @@ cluster_data = cluster_data2[['SPEED_ZONE', 'UNPROTECTED']]
 # ['SPEED_ZONE', 'MAX_AGE', 'RESTRAINT_WORN'] with k = 3,4
 # ['SPEED_ZONE', 'MAX_AGE']
 
-# ['SPEED_ZONE', 'MAX_AGE', 'RESTRAINT_WORN'] k =3 when looking at SEVERITY ==1
-
 # Copy data to normalise
 normalised_data = cluster_data.copy(deep=True)
 numeric_cols = normalised_data.select_dtypes(include='number').columns
@@ -133,21 +117,19 @@ for k in k_range:
 
 # Plotting and saving figure
 pt.plot(k_range, distortions, 'bx-')
-pt.title('Day, Hour and number of people killed clustering')
+pt.title('Speed Zone and Protection Worn Elbow Analysis')
 pt.xlabel('k Values')
 pt.ylabel('Distortion')
 pt.savefig('ageHazardElbow.png')
 
-print(normalised_data)
-
-clusters = KMeans(n_clusters=3, random_state=seed)
+clusters = KMeans(n_clusters=4, random_state=seed)
 clusters.fit(normalised_data)
 
 colormap = {0: 'red', 1: 'green', 2: 'blue', 3: 'orange', 4: 'cadetblue', 5: 'orchid', 6: 'lime'}
 
 
 # Plotting and saving figure, 3 dimensional
-fig = pt.figure(figsize=(7, 7))
+fig = pt.figure(figsize=(10, 8))
 ax = pt.axes(projection="3d")
 ax.scatter(cluster_data2['MAX_AGE'],
            cluster_data2['SPEED_ZONE'],
@@ -163,14 +145,16 @@ ax.set_title(f"Clusters on Speed Zone and Protection worn; k = {len(set(clusters
 pt.savefig('hardardCluster.png')
 
 
+pt.figure(figsize=(10, 10))
+pt.scatter(cluster_data2['SPEED_ZONE'], cluster_data2['severity_index'],
+           c=[colormap.get(x) for x in clusters.labels_], alpha=0.4)
+pt.xlabel('Speed Zone')
+pt.ylabel('Number of Crashes')
+pt.title('Crashes based on manufacture year, brand make, and body style')
+pt.savefig('task3_1_scatter.png')
+
+
 # Outputting clusters to individual CSV files
 crash_data = cluster_data2[['UNPROTECTED', 'SPEED_ZONE', 'MAX_AGE', 'SEX', 'LIGHT_CONDITION', 'severity_index', 'SEVERITY']]
 outputClusters(clusters.labels_, ['MAX_AGE'], True, crash_data)
 
-
-# To do:
-"""
-- Create a severity_index column
-- Get all one varible data from the clusters and categories the clusters
-
-"""

@@ -106,7 +106,7 @@ for k in k_range:
 
 # Plotting and saving figure
 pt.plot(k_range, distortions, 'bx-')
-pt.title('Day, Hour and number of people killed clustering')
+pt.title('Day, Hour and weighted people killed clustering')
 pt.xlabel('k Values')
 pt.ylabel('Distortion')
 pt.savefig('DayTimeClusteringElbow.png')
@@ -115,6 +115,7 @@ pt.savefig('DayTimeClusteringElbow.png')
 clusters = KMeans(n_clusters=9, random_state=seed)
 clusters.fit(normalisedTime_data)
 
+# Clusters are merged by making similar clusters labels the same colour
 colormap = {
     0: 'blue',
     1: 'orange',

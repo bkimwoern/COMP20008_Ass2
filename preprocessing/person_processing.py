@@ -11,7 +11,7 @@ def process_person_csv():
     filtered_person.replace(r'^\s*$', 'D', regex=True, inplace=True)
 
     # Replacing ambiguous or unknown values with NaN
-    filtered_person.replace(['Unknown', 'Not Known', 'N/A', 'NK', '5-Dec'], np.nan, inplace=True)
+    filtered_person.replace(['Unknown', 'Not Known', 'N/A', 'NK'], np.nan, inplace=True)
 
     # Creating new binary feature- IN_METAL_BOX
     in_metal_box(filtered_person)
