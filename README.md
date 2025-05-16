@@ -6,3 +6,8 @@ Assignment 2 for Elements of Data Processing
 
 To run preprocessing.py-
     python main.py preprocessing
+To run Correlation section:
+    Code is mostly self contained, run preprocessing first, then in terminal
+    python ./Correlation/all_correlation.py
+    This will generate all relevant plots in ./Correlation/Figures and print out some results from regression model (only r coefficient relevant for report)
+    Note plots will differ from report due to inherent randomness of method, but general relative strengths are consistent 
