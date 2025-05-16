@@ -1,10 +1,6 @@
 # Clustering to determine how age is related to crashes
 """"
-PLAN
-Clustering based on:
-light condition
-speed zone
-Crash Severity
+THIS CLUSTERTING FILE WAS NOT USED IN THE FINAL PROJECT
 
 
 Plot against: Aga vs Crash Severity
