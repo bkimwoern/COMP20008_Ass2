@@ -121,11 +121,13 @@ balanced_accident_df = pd.concat([fatal_records, non_fatal_entries])
 
 # try for scatterplots with some columns with line of best fit
 sns.lmplot(data=balanced_accident_df, x='NO_OF_VEHICLES', y='FATAL_RATIO')
-#plt.savefig("./Correlation/Figures/numvehiclesfatalratioplot.png", dpi=300)
+plt.title('Scatterplot of number of vehicles vs death proportion')
+plt.savefig("./Correlation/Figures/numvehiclesfatalratioplot.png")
 plt.show()
 
 sns.lmplot(data=balanced_accident_df, x='UNPROTECTED_RATIO', y='FATAL_RATIO')
-#plt.savefig("./Correlation/Figures/unprotectedfatalratioplot.png", dpi=300)
+plt.title('Scatterplot of unprotected individual ratio vs death proportion')
+plt.savefig("./Correlation/Figures/unprotectedfatalratioplot.png")
 plt.show()
 
 # prints ordinary least squares regression results of scatter plot
