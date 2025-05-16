@@ -1,10 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns # requires seaborn[stats]
+import seaborn as sns # requires seaborn[stats] installed
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.model_selection import train_test_split
 from scipy.stats import chi2_contingency
+import statsmodels.api as sm # requires statsmodels installed
+from patsy import dmatrices 
+from scipy.stats import entropy
+
 
 def cramers_corrected_stat(col1, col2): # adjusted from wikipedia
     """ calculate Cramers V statistic for categorial-categorial association.
@@ -21,7 +25,12 @@ def cramers_corrected_stat(col1, col2): # adjusted from wikipedia
     kcorr = k - ((k-1)**2)/(n-1)
     return np.sqrt(phi2corr / min( (kcorr-1), (rcorr-1)))
 
-def mutual_info(inputdata, dep_vars, ind_vars): # adjusted example from Geeksforgeeks.org
+def compute_entropy(series): # helper function for mutual info
+        counts = series.value_counts()
+        probs = counts / counts.sum()
+        return entropy(probs, base=2)
+    
+def mutual_info(inputdata, dep_vars, ind_vars, normal='Regular'): # adjusted example from Geeksforgeeks.org
     """_summary_
 
     Args:
@@ -40,13 +49,20 @@ def mutual_info(inputdata, dep_vars, ind_vars): # adjusted example from Geeksfor
         
     for var in ind_vars:
         data[var] = pd.factorize(data[var])[0]
+    
+    entropies = {var: compute_entropy(data[var]) for var in dep_vars + ind_vars}
 
     for i, var1 in enumerate(ind_vars):
         for j, var2 in enumerate(dep_vars):
             X = data[[var1]]
             y = data[var2]
             mutual_info = mutual_info_classif(X, y)
-            mutual_info_matrix[i, j] = mutual_info[0]
+            h_x = entropies[var1]
+            h_y = entropies[var2]
+            if normal == 'Regular':
+                mutual_info_matrix[i, j] = mutual_info[0] 
+            else: 
+                mutual_info_matrix[i, j] = mutual_info[0] / ((h_x + h_y)/2)
 
     mutual_info_df = pd.DataFrame(mutual_info_matrix, index=ind_vars, columns=dep_vars)
     return mutual_info_df
@@ -89,21 +105,42 @@ unprotected_ratio = person_df.groupby('ACCIDENT_NO')['UNPROTECTED'].mean().reset
 accident_df = accident_df.merge(unprotected_ratio, on='ACCIDENT_NO')
 
 # computes ratio of persons killed / total persons involved in a given accident
-accident_df['FATAL_RATIO'] = accident_df['NO_PERSONS_KILLED'] - accident_df['NO_PERSONS']
+accident_df['FATAL_RATIO'] = accident_df['NO_PERSONS_KILLED'] / accident_df['NO_PERSONS']
 
 # computes if accident involve deaths
-accident_df['IS_LETHAL'] = (accident_df['NO_PERSONS_KILLED'] > 0).astype(int)
-
-# computes the hour + minute as trailing decimal of a given accident
-accident_df['HOUR_AND_MINUTE'] = pd.to_datetime(accident_df['ACCIDENT_TIME'], format='%H:%M:%S').dt.hour + pd.to_datetime(accident_df['ACCIDENT_TIME'], format='%H:%M:%S').dt.minute / 60
+accident_df['IS_LETHAL'] = accident_df['NO_PERSONS_KILLED'].apply(lambda x: 1 if x > 0 else 0)
 
 # computes if recorded person is dead
 person_df['DEAD'] = person_df['INJ_LEVEL'].apply(lambda x: 1 if x == 1 else 0)
 
-# creates df where all rows have fatalities (length: 1415)
-fatal_accident_df = accident_df[accident_df['NO_PERSONS_KILLED'] > 0]
-fatal_person_df = person_df[person_df['INJ_LEVEL'] == 1]
+# sampling a subset of non-fatal accidents, so that the number of fatal and non-fatal class labels are even
+# this is done to remove the bias of there being so many non-fatal records (175751) to fatal records (2944)
+fatal_records = accident_df[accident_df['IS_LETHAL'] == 1]
+non_fatal_entries = accident_df[accident_df['IS_LETHAL'] == 0]
+non_fatal_entries = non_fatal_entries.sample(n=fatal_records.shape[0], random_state=42)
+balanced_accident_df = pd.concat([fatal_records, non_fatal_entries])
 
+# try for scatterplots with some columns with line of best fit
+sns.lmplot(data=balanced_accident_df, x='NO_OF_VEHICLES', y='FATAL_RATIO')
+#plt.savefig("./Correlation/Figures/numvehiclesfatalratioplot.png", dpi=300)
+plt.show()
+
+sns.lmplot(data=balanced_accident_df, x='UNPROTECTED_RATIO', y='FATAL_RATIO')
+#plt.savefig("./Correlation/Figures/unprotectedfatalratioplot.png", dpi=300)
+plt.show()
+
+# prints ordinary least squares regression results of scatter plot
+y, X = dmatrices('FATAL_RATIO ~ NO_OF_VEHICLES + UNPROTECTED_RATIO', data=balanced_accident_df, return_type='dataframe')
+mod = sm.OLS(y, X)
+res = mod.fit()
+print(res.summary())
+
+# sampling for person_df
+fatal_records = person_df[person_df['DEAD'] == 1]
+non_fatal_entries = person_df[person_df['DEAD'] == 0]
+non_fatal_entries = non_fatal_entries.sample(n=fatal_records.shape[0], random_state=42)
+balanced_person_df = pd.concat([fatal_records, non_fatal_entries])
+'''
 # compute cramers v coefficient association 
 accident_cramersv = {}
 for col in accident_df:
@@ -123,13 +160,12 @@ for col in person_df:
 print("PERSON")
 for item in sorted(person_cramersv.items(), key=lambda x: x[1], reverse=True):
     print(item)
-
+'''
 # create mutual information matrix of accident_df and represent in heat map
-dep_vars = ['SEVERITY', 'IS_LETHAL']
+dep_vars = ['SEVERITY', 'IS_LETHAL', 'FATAL_RATIO']
 ind_vars = ['AT_INTERSECTION', 'NO_OF_VEHICLES', 'ACCIDENT_TYPE', 'UNPROTECTED_RATIO', 'ROAD_GEOMETRY']
-#ind_vars = [x for x in accident_df.columns if x not in dep_vars]
 
-mutual_info_df = mutual_info(accident_df, dep_vars, ind_vars)
+mutual_info_df = mutual_info(balanced_accident_df, dep_vars, ind_vars)
 #print(mutual_info_df)
 plt.figure(figsize=(10, 8))
 sns.heatmap(mutual_info_df, annot=True, cmap='coolwarm', square=True)
@@ -137,11 +173,11 @@ plt.title('Pairwise Mutual Information')
 plt.savefig("./Correlation/Figures/accidentMIheatmap.png", dpi=300)
 plt.show()
 
-dep_vars = ['DEAD']
-ind_vars = ['SEX', 'AGE_GROUP', 'IN_METAL_BOX', 'ROAD_USER_TYPE', 'TAKEN_HOSPITAL', 'UNPROTECTED']
-#ind_vars = [x for x in person_df.columns if x not in dep_vars]
 
-mutual_info_df = mutual_info(person_df, dep_vars, ind_vars)
+dep_vars = ['DEAD', 'INJ_LEVEL']
+ind_vars = ['SEX', 'AGE_GROUP', 'IN_METAL_BOX', 'ROAD_USER_TYPE', 'UNPROTECTED']
+
+mutual_info_df = mutual_info(balanced_person_df, dep_vars, ind_vars)
 #print(mutual_info_df)
 plt.figure(figsize=(10, 8))
 sns.heatmap(mutual_info_df, annot=True, cmap='coolwarm', square=True)
@@ -149,6 +185,31 @@ plt.title('Pairwise Mutual Information')
 plt.savefig("./Correlation/Figures/personMIheatmap.png", dpi=300)
 plt.show()
 
+# create normalized mutual information matrix of accident_df and represent in heat map
+dep_vars = ['SEVERITY', 'IS_LETHAL', 'FATAL_RATIO']
+ind_vars = ['AT_INTERSECTION', 'NO_OF_VEHICLES', 'ACCIDENT_TYPE', 'UNPROTECTED_RATIO', 'ROAD_GEOMETRY']
+
+mutual_info_df = mutual_info(balanced_accident_df, dep_vars, ind_vars, "Normal")
+#print(mutual_info_df)
+plt.figure(figsize=(10, 8))
+sns.heatmap(mutual_info_df, annot=True, cmap='coolwarm', square=True)
+plt.title('Pairwise Normalized Mutual Information')
+plt.savefig("./Correlation/Figures/accidentNMIheatmap.png", dpi=300)
+plt.show()
+
+
+dep_vars = ['DEAD', 'INJ_LEVEL']
+ind_vars = ['SEX', 'AGE_GROUP', 'IN_METAL_BOX', 'ROAD_USER_TYPE', 'UNPROTECTED']
+
+mutual_info_df = mutual_info(balanced_person_df, dep_vars, ind_vars, "Normal")
+#print(mutual_info_df)
+plt.figure(figsize=(10, 8))
+sns.heatmap(mutual_info_df, annot=True, cmap='coolwarm', square=True)
+plt.title('Pairwise Normalized Mutual Information')
+plt.savefig("./Correlation/Figures/personNMIheatmap.png", dpi=300)
+plt.show()
+
+''' # ignore
 # create side by side barplots of overall data vs fatal data by column
 compare_count_barplot(accident_df, fatal_accident_df, 'SPEED_ZONE', ylim=43, title2="Fatal")
 plt.savefig("./Correlation/Figures/speedzonecompplot.png", dpi=300)
@@ -174,6 +235,7 @@ compare_count_barplot(person_df, fatal_person_df, 'AGE_GROUP', ylim=21, title2="
 plt.savefig("./Correlation/Figures/agegroupcompplot.png", dpi=300)
 plt.show()
 
-compare_count_barplot(person_df, fatal_person_df, 'UNPROTECTED', ylim=90, title2="Fatal")
+compare_count_barplot(person_df, fatal_person_df, 'UNPROTECTED', ylim=70, title2="Fatal")
 plt.savefig("./Correlation/Figures/unprotectedcompplot.png", dpi=300)
 plt.show()
+'''

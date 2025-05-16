@@ -112,10 +112,20 @@ pt.ylabel('Distortion')
 pt.savefig('DayTimeClusteringElbow.png')
 
 # K value of 7 or 8 was found to be useful
-clusters = KMeans(n_clusters=7, random_state=seed)
+clusters = KMeans(n_clusters=9, random_state=seed)
 clusters.fit(normalisedTime_data)
 
-colormap = {0: 'red', 1: 'green', 2: 'blue', 3: 'darkviolet', 4: 'orange', 5: 'cadetblue', 6: 'orchid', 7: 'lime'}
+colormap = {
+    0: 'red',
+    1: 'blue',
+    2: 'green',
+    3: 'orange',
+    4: 'purple',
+    5: 'cyan',
+    6: 'magenta',
+    7: 'gold',
+    8: 'black'
+}
 
 # Plotting and saving figure
 fig = pt.figure(figsize=(7, 7))

@@ -53,27 +53,11 @@ accident_data['ACCIDENT_TIME'] = pd.to_datetime(accident_data['ACCIDENT_TIME'], 
 # Number time by hour
 accident_data['hour'] = accident_data['ACCIDENT_TIME'].dt.hour
 
-# Counting number of each day
-days_counts = accident_data['DAY_OF_WEEK'].value_counts().sort_index()
-
-# Creating weights for each day (10000 is added so the number isn't tiny)
-days_weights = 10000 / days_counts
-
-# counting number of each hour
-hour_counts = accident_data['hour'].value_counts().sort_index()
-
-# Creating weights for each hour (10000 is added so the number isn't tiny)
-hour_weights = 10000 / hour_counts
-
-# Applying weights to people killed
-accident_data['weighted_ppl_killed'] = accident_data['NO_PERSONS_KILLED'] * accident_data['DAY_OF_WEEK'].map(days_weights)
-accident_data['weighted_ppl_killed'] = accident_data['weighted_ppl_killed'] * accident_data['hour'].map(hour_weights)
-
 # Drop values with no deaths
 accident_data = accident_data[accident_data['SEVERITY'] == 1]
 
 # Group by hour and day of the week and count sum of deaths
-time_data = accident_data.groupby(['hour','DAY_OF_WEEK'])['weighted_ppl_killed'].sum().reset_index()
+time_data = accident_data.groupby(['hour','DAY_OF_WEEK'])['NO_PERSONS_KILLED'].sum().reset_index()
 
 # Copy data to normalise
 normalisedTime_data = time_data.copy(deep=True)
@@ -91,12 +75,12 @@ normalisedTime_data = normalisedTime_data.drop(columns=['DAY_OF_WEEK'])
 normalisedTime_data = normalisedTime_data.drop(columns=['hour'])
 
 # Normalise weighted deaths to be between -1 and 1
-normalisedTime_data['weighted_ppl_killed'] = 2 * ((normalisedTime_data['weighted_ppl_killed'] - normalisedTime_data['weighted_ppl_killed'].min()) / (normalisedTime_data['weighted_ppl_killed'].max() - normalisedTime_data['weighted_ppl_killed'].min())) -1
+normalisedTime_data['NO_PERSONS_KILLED'] = 2 * ((normalisedTime_data['NO_PERSONS_KILLED'] - normalisedTime_data['NO_PERSONS_KILLED'].min()) / (normalisedTime_data['NO_PERSONS_KILLED'].max() - normalisedTime_data['NO_PERSONS_KILLED'].min())) -1
 
 
 
 # Using elbow method to find best k value: The following code is from week 6 workshop
-seed = 100
+seed = 120
 distortions = []
 k_range = range(1, 15)
 for k in k_range:
@@ -106,34 +90,23 @@ for k in k_range:
 
 # Plotting and saving figure
 pt.plot(k_range, distortions, 'bx-')
-pt.title('Day, Hour and weighted people killed clustering')
+pt.title('Day, hour and number of people killed clustering')
 pt.xlabel('k Values')
 pt.ylabel('Distortion')
 pt.savefig('DayTimeClusteringElbow.png')
 
 # K value of 7 or 8 was found to be useful
-clusters = KMeans(n_clusters=9, random_state=seed)
+clusters = KMeans(n_clusters=3, random_state=seed)
 clusters.fit(normalisedTime_data)
 
-# Clusters are merged by making similar clusters labels the same colour
-colormap = {
-    0: 'blue',
-    1: 'orange',
-    2: 'green',
-    3: 'red',
-    4: 'orange',
-    5: 'green',
-    6: 'blue',
-    7: 'green',
-    8: 'purple'
-}
+colormap = {0: 'red', 1: 'green', 2: 'blue', 3: 'darkviolet', 4: 'orange', 5: 'cadetblue', 6: 'orchid', 7: 'lime'}
 
 # Plotting and saving figure
 fig = pt.figure(figsize=(7, 7))
 ax = pt.axes(projection="3d")
 ax.scatter(time_data['hour'],
            time_data['DAY_OF_WEEK'],
-           time_data['weighted_ppl_killed'],
+           time_data['NO_PERSONS_KILLED'],
            c=[colormap.get(x) for x in clusters.labels_])
 
 ax.set_ylabel('Day of the Week')
@@ -143,8 +116,8 @@ ax.set_yticklabels(["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Fri
 
 
 ax.set_xlabel('Hour')
-ax.set_zlabel('Weighted people killed')
-ax.set_title(f"Day, Time clustering against weighted deaths; (merging clusters) k = {len(set(clusters.labels_))}")
+ax.set_zlabel('People Killed')
+ax.set_title(f"Day, Time against number of people killed k= {len(set(clusters.labels_))}")
 pt.savefig('DayTimeClustering.png')
 
 outputClusters(clusters.labels_, ['DAY_OF_WEEK', 'hour'], False, time_data)
